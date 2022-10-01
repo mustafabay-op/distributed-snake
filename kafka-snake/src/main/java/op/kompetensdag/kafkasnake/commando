@@ -1,10 +1,11 @@
+docker-compose up -d
+
+Open Kafka terminal and run following 2:
 
 kafka-console-producer --bootstrap-server localhost:9092 --topic streams-plaintext-input
 
-
-
 kafka-console-consumer --bootstrap-server localhost:9092 \
-    --topic streams-pipe-output \
+    --topic streams-wordcount-output \
     --from-beginning \
     --formatter kafka.tools.DefaultMessageFormatter \
     --property print.key=true \
