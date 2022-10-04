@@ -6,6 +6,7 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.BranchedKStream;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.state.KeyValueStore;
@@ -46,6 +47,16 @@ public class Snake {
 
         KStream<String, String> source = builder.stream("streams-snake-input");
         source.peek((k, v) -> System.out.println("Key: " + k + " Value: " + v));
+
+        BranchedKStream<String, String> commandBranches =
+                builder.stream("COMMANDS_STREAM", Consumed.with(Serdes.UUID(), commandValueSerde)).split();
+
+        // Movement_command.
+        commandBranches.branch((k, v) -> {
+            return DirectionParser.parse(v.getCOMMAND()) != null;
+        }, Branched.withConsumer(stream -> stream.mapValues(v -> {
+            return DirectionParser.parse(v.getCOMMAND());
+        }).to(MOVEMENT_COMMAND_STREAM, Produced.with(Serdes.UUID(), movementCommandValueSerde))));
 
 
         source.flatMapValues(value -> Arrays.asList(value.toLowerCase(Locale.getDefault()).split("\\W+")))
