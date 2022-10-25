@@ -1,5 +1,7 @@
 package op.kompetensdag.snake;
 
+import op.kompetensdag.snake.events.GameAdministrationKeyPressed;
+import op.kompetensdag.snake.events.GameMovementKeyPressed;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -19,6 +21,8 @@ public class SnakeApplication {
 
     private static final String GAME_ADMINISTRATION_COMMANDS = "game-admin-commands";
 
+    private static final String CLIENT_RESPONSES = "client-responses";
+
     public static void main(String[] args) {
 
         Properties props = new Properties();
@@ -30,37 +34,38 @@ public class SnakeApplication {
 
         final StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<String, String> gameInput = builder.stream(GAME_INPUT,
+/*        KStream<String, String> gameInput = builder.stream(GAME_INPUT,
                 Consumed.with(Serdes.String(), Serdes.String()));
 
         BranchedKStream<String, String> gameInputBranched =
                 builder.stream(GAME_INPUT, Consumed.with(Serdes.String(), Serdes.String())).split();
 
         gameInputBranched.branch(
-                (k, v) -> GameMovementKeyPressed.valueOf(v) != null,
+                (k, v) -> GameMovementKeyPressed.isValidValue(v),
                 Branched.withConsumer(stream -> stream.mapValues((k,v) -> GameMovementKeyPressed.valueOf(v))
-                        .to(GAME_MOVEMENT_COMMANDS, Produced.with(Serdes.String(), CustomSerdes.gameMovementKeyPressedValueSerde))));
+                        .to(GAME_MOVEMENT_COMMANDS, Produced.with(Serdes.String(), CustomSerdes.gameMovementKeyPressedSerde))));
 
         gameInputBranched.branch(
-                (k, v) -> GameAdministrationKeyPressed.valueOf(v) != null,
+                (k, v) -> GameAdministrationKeyPressed.isValidValue(v),
                 Branched.withConsumer(stream -> stream.mapValues((k,v) -> GameAdministrationKeyPressed.valueOf(v))
                 .to(GAME_ADMINISTRATION_COMMANDS, Produced.with(Serdes.String(), CustomSerdes.gameAdministrationKeyPressedSerde))));
 
         gameInputBranched.defaultBranch(
                 Branched.withConsumer(stream -> stream.mapValues(
                         v -> ""
-                ).to("RESPONSES_STREAM", Produced.with(Serdes.String(), Serdes.String()))));
+                ).to(CLIENT_RESPONSES, Produced.with(Serdes.String(), Serdes.String()))));
+*/
+
+
+        GameInputRouter.define(builder);
+        MovementProcessor.define(builder);
 
 
 
 
 
 
-
-
-
-
-        gameInput.mapValues((k, v) -> GameMovementKeyPressed.valueOf(v)).to("Topic");
+        /*gameInput.mapValues((k, v) -> GameMovementKeyPressed.valueOf(v)).to("Topic");
 
         KStream<String, GameMovementKeyPressed> commandsKStream3 = builder.stream("Topic");
 
@@ -72,7 +77,7 @@ public class SnakeApplication {
                 Consumed.with(Serdes.String(), Serdes.String()))
                 .join(kTable, (inventoryCommand, locationData) -> {
                     return "2";
-                }).to("topic-123");
+                }).to("topic-123");*/
 /*        stema.initalizewithDirection
 
                 GameStartedEvent skapar intialize state

@@ -18,7 +18,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.apache.kafka:kafka-streams'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-
+	implementation 'com.fasterxml.jackson.core:jackson-core:2.13.4'
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.4.2'
 
 	implementation 'org.springframework.kafka:spring-kafka'
 	compileOnly 'org.projectlombok:lombok'
