@@ -1,0 +1,10 @@
+{"namespace": "op.koko.snakeclient.model",
+  "type": "record",
+  "name": "Dot",
+  "fields": [
+    {"name": "x", "type": "int"},
+    {"name": "y",  "type": "int"},
+    {"name": "symbol", "type": "string"}
+  ],
+  "connect.name": "op.koko.snakeclient.model.Dot"
+}
