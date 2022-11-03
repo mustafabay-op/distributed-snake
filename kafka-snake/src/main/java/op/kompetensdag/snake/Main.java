@@ -1,7 +1,10 @@
 package op.kompetensdag.snake;
 
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.protocol.types.Field;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
@@ -9,6 +12,7 @@ import org.apache.kafka.streams.Topology;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import org.apache.kafka.streams.kstream.BranchedKStream;
@@ -28,6 +32,8 @@ public class Main {
 
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+        props.put("schema.registry.url", "http://localhost:8081");
+        // props.put(ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG, true);
 
         String schemaRegistryUrl = props.getProperty("schema.registry.url");
         Map<String, String> schemaRegistryProps =
@@ -47,6 +53,25 @@ public class Main {
                 .mapValues(v -> v.COMMAND + "processed")
                 .to(GAME_OUTPUT);
 
-        builder.build();
+
+        final Topology topology = builder.build();
+        final KafkaStreams streams = new KafkaStreams(topology, props);
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Runtime.getRuntime().addShutdownHook(new Thread("streams-shutdown-hook") {
+            @Override
+            public void run() {
+                streams.close();
+                latch.countDown();
+            }
+        });
+
+        try {
+            streams.start();
+            latch.await();
+        } catch (Throwable e) {
+            System.exit(1);
+        }
+        System.exit(0);
     }
 }
