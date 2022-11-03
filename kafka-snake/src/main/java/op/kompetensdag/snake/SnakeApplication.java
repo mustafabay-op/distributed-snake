@@ -1,17 +1,13 @@
 package op.kompetensdag.snake;
 
-import op.kompetensdag.snake.events.GameAdministrationKeyPressed;
-import op.kompetensdag.snake.events.GameMovementKeyPressed;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
-import org.apache.kafka.streams.kstream.*;
 
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
-
 
 
 public class SnakeApplication {
@@ -31,6 +27,7 @@ public class SnakeApplication {
 
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+
 
         final StreamsBuilder builder = new StreamsBuilder();
 

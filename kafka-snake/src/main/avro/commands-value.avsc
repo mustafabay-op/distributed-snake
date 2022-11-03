@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "CommandValue",
+  "namespace": "op.kompetensdag.snake",
+  "fields": [
+    {
+      "name": "COMMAND",
+      "type": [
+        "null",
+        {
+          "type": "string",
+          "avro.java.string": "String"
+        }
+      ],
+      "default": null
+    }
+  ],
+  "connect.name": "op.kompetensdag.snake.CommandValue"
+}
