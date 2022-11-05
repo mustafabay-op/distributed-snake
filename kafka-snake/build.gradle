@@ -1,6 +1,7 @@
 plugins {
 	id 'org.springframework.boot' version '3.0.0-M5'
 	id 'io.spring.dependency-management' version '1.1.0-RC1'
+	id "com.github.davidmc24.gradle.plugin.avro" version "1.0.0"
 	id 'java'
 }
 
@@ -12,6 +13,12 @@ repositories {
 	mavenCentral()
 	maven { url 'https://repo.spring.io/milestone' }
 	maven { url 'https://repo.spring.io/snapshot' }
+	maven {
+		url "https://packages.confluent.io/maven/"
+	}
+	maven {
+		url "https://repository.mulesoft.org/nexus/content/repositories/public/"
+	}
 }
 
 dependencies {
@@ -20,11 +27,21 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'com.fasterxml.jackson.core:jackson-core:2.13.4'
 	implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.4.2'
+	//implementation 'javax.websocket:javax.websocket-api:1.1'
+
 
 	implementation 'org.springframework.kafka:spring-kafka'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
+
+	// avro
+	implementation "org.apache.avro:avro:1.11.0"
+	implementation 'io.confluent:kafka-streams-avro-serde:6.2.0'
+	implementation 'io.confluent:kafka-schema-registry-client:6.2.0'
+	// https://mvnrepository.com/artifact/javax.ws.rs/jsr311-api
+	implementation 'javax.ws.rs:jsr311-api:1.1.1'
+	implementation 'com.sun.jersey:jersey-client:1.19.4'
 
 }
 

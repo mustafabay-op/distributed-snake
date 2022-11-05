@@ -2,13 +2,15 @@ docker-compose up -d
 
 Open Kafka terminal and run following 2:
 
-kafka-console-producer --bootstrap-server localhost:9092 --topic game-input-topic
+kafka-console-producer --bootstrap-server localhost:9092 --topic game-input
 
 kafka-console-consumer --bootstrap-server localhost:9092 \
-    --topic gameMovementKeyPressedEvent-topic \
+    --topic game-output \
     --from-beginning \
     --formatter kafka.tools.DefaultMessageFormatter \
     --property print.key=true \
     --property print.value=true \
     --property key.deserializer=org.apache.kafka.common.serialization.StringDeserializer \
     --property value.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+
+    kafka-topics.sh --bootstrap-server localhost:9092 --topic first_topic --create --partitions 3 --replication-factor 1
