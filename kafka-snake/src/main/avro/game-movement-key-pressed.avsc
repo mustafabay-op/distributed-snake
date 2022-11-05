@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "GameMovementCommand",
+  "namespace": "op.kompetensdag.snake",
+  "fields": [
+    {
+      "name": "KEYPRESSED",
+      "type": [
+        "null",
+        {
+          "type": "string",
+          "avro.java.string": "String"
+        }
+      ],
+      "default": null
+    }
+  ],
+  "connect.name": "op.kompetensdag.snake.GameMovementCommand"
+
+}
