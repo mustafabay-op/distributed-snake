@@ -1,13 +1,13 @@
-# START KAFKA
+# START KAFKA BROKER
 docker-compose up -d
 
 # CREATE PRODUCER
-Open Kafka terminal and run following 2:
+# OPEN BROKER CLI
 
-kafka-console-producer --bootstrap-server localhost:9092 --topic game-input
+kafka-console-producer --bootstrap-server localhost:9092 --topic game_input
 
 kafka-console-consumer --bootstrap-server localhost:9092 \
-    --topic game-output \
+    --topic game_output \
     --from-beginning \
     --formatter kafka.tools.DefaultMessageFormatter \
     --property print.key=true \
@@ -15,15 +15,13 @@ kafka-console-consumer --bootstrap-server localhost:9092 \
     --property key.deserializer=org.apache.kafka.common.serialization.StringDeserializer \
     --property value.deserializer=org.apache.kafka.common.serialization.StringDeserializer
 
-
 # CREATE TOPICS
-
-# Go to zookeeper CLI, cd ..
+# GO TO BROKER CLI
 kafka-topics --bootstrap-server localhost:9092 --topic game_input --create --partitions 3 --replication-factor 1
 kafka-topics --bootstrap-server localhost:9092 --topic game_commands --create --partitions 3 --replication-factor 1
 kafka-topics --bootstrap-server localhost:9092 --topic game_output --create --partitions 3 --replication-factor 1
 
 # DELETE TOPICS
-kafka-topics --delete game_input
-kafka-topics --delete --topic game-output --bootstrap-server localhost:9092
+# GO TO BROKER CLI
+kafka-topics --delete --topic game_output --bootstrap-server localhost:9092
 
