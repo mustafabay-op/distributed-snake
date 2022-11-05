@@ -1,93 +1,61 @@
 package op.kompetensdag.snake;
 
+import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
+import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.Produced;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+
+import static op.kompetensdag.snake.Topics.*;
 
 
 public class SnakeApplication {
 
-    private static final String GAME_INPUT = "game-input";
-    private static final String GAME_MOVEMENT_COMMANDS = "movement-commands";
-
-    private static final String GAME_ADMINISTRATION_COMMANDS = "game-admin-commands";
-
-    private static final String CLIENT_RESPONSES = "client-responses";
 
     public static void main(String[] args) {
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-snake");
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");    // assuming that the Kafka broker this application is talking to runs on local machine with port 9092
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
 
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+        props.put("schema.registry.url", "http://localhost:8081");
 
+        String schemaRegistryUrl = props.getProperty("schema.registry.url");
+        Map<String, String> schemaRegistryProps =
+                Collections.singletonMap(AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
 
         final StreamsBuilder builder = new StreamsBuilder();
 
-/*        KStream<String, String> gameInput = builder.stream(GAME_INPUT,
-                Consumed.with(Serdes.String(), Serdes.String()));
 
-        BranchedKStream<String, String> gameInputBranched =
-                builder.stream(GAME_INPUT, Consumed.with(Serdes.String(), Serdes.String())).split();
+        SpecificAvroSerde<CommandValue> commandValueSerde = new SpecificAvroSerde<>();
+        commandValueSerde.configure(schemaRegistryProps, false);
 
-        gameInputBranched.branch(
-                (k, v) -> GameMovementKeyPressed.isValidValue(v),
-                Branched.withConsumer(stream -> stream.mapValues((k,v) -> GameMovementKeyPressed.valueOf(v))
-                        .to(GAME_MOVEMENT_COMMANDS, Produced.with(Serdes.String(), CustomSerdes.gameMovementKeyPressedSerde))));
+        builder.stream(GAME_INPUT, Consumed.with(Serdes.String(), Serdes.String()))
+                .mapValues(CommandValue::new)
+                .to(GAME_COMMANDS, Produced.with(Serdes.String(), commandValueSerde));
 
-        gameInputBranched.branch(
-                (k, v) -> GameAdministrationKeyPressed.isValidValue(v),
-                Branched.withConsumer(stream -> stream.mapValues((k,v) -> GameAdministrationKeyPressed.valueOf(v))
-                .to(GAME_ADMINISTRATION_COMMANDS, Produced.with(Serdes.String(), CustomSerdes.gameAdministrationKeyPressedSerde))));
-
-        gameInputBranched.defaultBranch(
-                Branched.withConsumer(stream -> stream.mapValues(
-                        v -> ""
-                ).to(CLIENT_RESPONSES, Produced.with(Serdes.String(), Serdes.String()))));
-*/
-
-
-        GameInputRouter.define(builder);
-        MovementProcessor.define(builder);
+        builder.stream(GAME_COMMANDS, Consumed.with(Serdes.String(), commandValueSerde))
+                .mapValues(v -> v.COMMAND + "processed")
+                .to(GAME_OUTPUT);
 
 
 
 
+        // GameInputRouter.define(builder);
+        // MovementProcessor.define(builder);
 
 
-        /*gameInput.mapValues((k, v) -> GameMovementKeyPressed.valueOf(v)).to("Topic");
-
-        KStream<String, GameMovementKeyPressed> commandsKStream3 = builder.stream("Topic");
-
-        commandsKStream3.peek((k, v) -> System.out.println("Key: " + k + " Value: " + v));
-
-        KTable<String, String> kTable = builder.table("topic-123");
-
-        builder.stream("INVENTORY_COMMAND_STREAM",
-                Consumed.with(Serdes.String(), Serdes.String()))
-                .join(kTable, (inventoryCommand, locationData) -> {
-                    return "2";
-                }).to("topic-123");*/
-/*        stema.initalizewithDirection
-
-                GameStartedEvent skapar intialize state
-
-
-        KStream<String, String> userLocationChanges =
-                userPositionTable
-                        .toStream()
-                        .leftJoin(locationDataTable, (uuid, position) -> position,
-                                (position, locationData) -> new LocationData(position.getX(), position.getY(),
-                                        locationData == null ? null : locationData.getDESCRIPTION(),
-                                        locationData == null ? null : locationData.getOBJECTS()));
-*/
 
 
         final Topology topology = builder.build();

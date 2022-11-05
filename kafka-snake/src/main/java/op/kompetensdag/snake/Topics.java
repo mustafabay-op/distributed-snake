@@ -2,14 +2,15 @@ package op.kompetensdag.snake;
 
 public class Topics {
 
-    public static final String GAME_INPUT_TOPIC = "game-input";
-    public static final String GAME_MOVEMENT_COMMANDS_TOPIC = "movement-commands";
-    public static final String GAME_ADMINISTRATION_COMMANDS_TOPIC = "game-admin-commands";
-    public static final String CLIENT_RESPONSES_TOPIC = "client-responses";
+    static final String GAME_INPUT = "game_input";
+    static final String GAME_OUTPUT = "game_output";
+    static final String GAME_COMMANDS = "game_commands";
 
-    public static final String GAME_STATUS_TOPIC = "game-status";
-
-    public static final String HEAD_DIRECTION_TOPIC = "head-direction";
-
-    public static final String GAME_ADMINISTRATION_COMMANDS = "game-administration";
+    static final String GAME_INPUT_TOPIC = "game_input";
+    static final String GAME_MOVEMENT_COMMANDS_TOPIC = "movement_commands";
+    static final String GAME_ADMINISTRATION_COMMANDS_TOPIC = "game_admin_commands";
+    static final String CLIENT_RESPONSES_TOPIC = "client_responses";
+    static final String GAME_STATUS_TOPIC = "game_status";
+    static final String HEAD_DIRECTION_TOPIC = "head_direction";
+    static final String GAME_ADMINISTRATION_COMMANDS = "game_administration";
 }
