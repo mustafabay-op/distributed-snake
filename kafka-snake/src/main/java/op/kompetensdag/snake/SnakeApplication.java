@@ -7,15 +7,12 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
-import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.Produced;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
-import static op.kompetensdag.snake.Topics.*;
 
 
 public class SnakeApplication {
@@ -26,33 +23,31 @@ public class SnakeApplication {
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-snake");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
-
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put("schema.registry.url", "http://localhost:8081");
 
-        String schemaRegistryUrl = props.getProperty("schema.registry.url");
-        Map<String, String> schemaRegistryProps =
-                Collections.singletonMap(AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
+        Map<String, String> schemaRegistryProps = Collections.singletonMap(
+                AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, props.getProperty("schema.registry.url"));
 
         final StreamsBuilder builder = new StreamsBuilder();
 
 
-        SpecificAvroSerde<CommandValue> commandValueSerde = new SpecificAvroSerde<>();
-        commandValueSerde.configure(schemaRegistryProps, false);
+        SpecificAvroSerde<GameMovementCommand> gameMovementCommandSpecificAvroSerde = new SpecificAvroSerde<>();
+        gameMovementCommandSpecificAvroSerde.configure(schemaRegistryProps, false);
 
-        builder.stream(GAME_INPUT, Consumed.with(Serdes.String(), Serdes.String()))
-                .mapValues(CommandValue::new)
-                .to(GAME_COMMANDS, Produced.with(Serdes.String(), commandValueSerde));
+/*        builder.stream(GAME_INPUT, Consumed.with(Serdes.String(), Serdes.String()))
+                .mapValues(GameMovementKeyPressedAvro::new)
+                .to(GAME_COMMANDS, Produced.with(Serdes.String(), gameMovementKeyPressedAvroSpecificAvroSerde));
 
-        builder.stream(GAME_COMMANDS, Consumed.with(Serdes.String(), commandValueSerde))
-                .mapValues(v -> v.COMMAND + "processed")
-                .to(GAME_OUTPUT);
-
-
+        builder.stream(GAME_COMMANDS, Consumed.with(Serdes.String(), gameMovementKeyPressedAvroSpecificAvroSerde))
+                .mapValues(v -> v.KEYPRESSED + " : " + v.getKEYPRESSED() + "processed " + v.getClass())
+                .to(GAME_OUTPUT);*/
 
 
-        // GameInputRouter.define(builder);
+
+
+        GameInputRouter.define(builder, schemaRegistryProps);
         // MovementProcessor.define(builder);
 
 
