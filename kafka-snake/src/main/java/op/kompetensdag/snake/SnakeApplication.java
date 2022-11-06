@@ -2,17 +2,23 @@ package op.kompetensdag.snake;
 
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
+import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.kstream.Named;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
+import static op.kompetensdag.snake.Topics.GAME_STATUS_TOPIC;
 
 
 public class SnakeApplication {
@@ -32,23 +38,16 @@ public class SnakeApplication {
 
         final StreamsBuilder builder = new StreamsBuilder();
 
+        SpecificAvroSerde<GameStatus> gameStatusSerde = new SpecificAvroSerde<>();
+        gameStatusSerde.configure(schemaRegistryProps, false);
 
-        SpecificAvroSerde<GameMovementCommand> gameMovementCommandSpecificAvroSerde = new SpecificAvroSerde<>();
-        gameMovementCommandSpecificAvroSerde.configure(schemaRegistryProps, false);
-
-/*        builder.stream(GAME_INPUT, Consumed.with(Serdes.String(), Serdes.String()))
-                .mapValues(GameMovementKeyPressedAvro::new)
-                .to(GAME_COMMANDS, Produced.with(Serdes.String(), gameMovementKeyPressedAvroSpecificAvroSerde));
-
-        builder.stream(GAME_COMMANDS, Consumed.with(Serdes.String(), gameMovementKeyPressedAvroSpecificAvroSerde))
-                .mapValues(v -> v.KEYPRESSED + " : " + v.getKEYPRESSED() + "processed " + v.getClass())
-                .to(GAME_OUTPUT);*/
-
+        KTable<String, GameStatus> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde), Materialized.as("GAME_STATUS_TABLE").with(Serdes.String(), gameStatusSerde));
 
 
 
         GameInputRouter.define(builder, schemaRegistryProps);
-        // MovementProcessor.define(builder);
+        MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable);
+        AdministrationProcessor.define(builder, schemaRegistryProps, gameStatusKTable);
 
 
 

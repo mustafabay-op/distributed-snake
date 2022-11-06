@@ -1,10 +1,10 @@
 {
   "type": "record",
-  "name": "GameMovementCommand",
+  "name": "GameStatus",
   "namespace": "op.kompetensdag.snake",
   "fields": [
     {
-      "name": "KEYPRESSED",
+      "name": "STATUS",
       "type": [
         "null",
         {
@@ -15,5 +15,5 @@
       "default": null
     }
   ],
-  "connect.name": "op.kompetensdag.snake.GameMovementCommand"
+  "connect.name": "op.kompetensdag.snake.GameStatus"
 }

@@ -19,6 +19,9 @@ public class GameInputRouter {
     public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps){
         SpecificAvroSerde<GameMovementCommand> gameMovementCommandSpecificAvroSerde = new SpecificAvroSerde<>();
         gameMovementCommandSpecificAvroSerde.configure(schemaRegistryProps, false);
+        SpecificAvroSerde<GameAdministrationCommand> gameAdministrationCommandSpecificAvroSerde = new SpecificAvroSerde<>();
+        gameAdministrationCommandSpecificAvroSerde.configure(schemaRegistryProps, false);
+
 
         BranchedKStream<String, String> gameInputBranched =
                 builder.stream(GAME_INPUT_TOPIC, Consumed.with(Serdes.String(), Serdes.String())).split();
@@ -27,13 +30,13 @@ public class GameInputRouter {
 
         gameInputBranched.branch(
                 (k, v) -> GameMovementCommandParser.parse(v) != null,
-                Branched.withConsumer(stream -> stream.mapValues((k, v) -> GameMovementCommandParser.parse(v))
+                Branched.withConsumer(stream -> stream.mapValues(GameMovementCommandParser::parse)
                         .to(GAME_MOVEMENT_COMMANDS_TOPIC, Produced.with(Serdes.String(), gameMovementCommandSpecificAvroSerde))));
 
-/*        gameInputBranched.branch(
-                (k, v) -> GameAdministrationKeyPressed.isValidValue(v),
-                Branched.withConsumer(stream -> stream.mapValues((k,v) -> GameAdministrationKeyPressed.valueOf(v))
-                        .to(GAME_ADMINISTRATION_COMMANDS_TOPIC, Produced.with(Serdes.String(), CustomSerdes.gameAdministrationKeyPressedSerde))));*/
+        gameInputBranched.branch(
+                (k, v) -> GameAdministrationCommandParser.parse(v) != null,
+                Branched.withConsumer(stream -> stream.mapValues(GameAdministrationCommandParser::parse)
+                        .to(GAME_ADMINISTRATION_COMMANDS_TOPIC, Produced.with(Serdes.String(), gameAdministrationCommandSpecificAvroSerde))));
 
         gameInputBranched.defaultBranch(
                 Branched.withConsumer(stream -> stream.mapValues(
@@ -41,6 +44,10 @@ public class GameInputRouter {
                 ).to(GAME_MOVEMENT_COMMANDS_TOPIC, Produced.with(Serdes.String(), gameMovementCommandSpecificAvroSerde))));
 
         builder.stream(GAME_MOVEMENT_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameMovementCommandSpecificAvroSerde))
+                .mapValues(v -> v.KEYPRESSED + " : " + v.getKEYPRESSED() + "processed " + v.getClass())
+                .to(GAME_OUTPUT);
+
+        builder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdministrationCommandSpecificAvroSerde))
                 .mapValues(v -> v.KEYPRESSED + " : " + v.getKEYPRESSED() + "processed " + v.getClass())
                 .to(GAME_OUTPUT);
 

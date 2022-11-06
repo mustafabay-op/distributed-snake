@@ -21,6 +21,12 @@ kafka-topics --bootstrap-server localhost:9092 --topic game_input --create --par
 kafka-topics --bootstrap-server localhost:9092 --topic game_commands --create --partitions 3 --replication-factor 1
 kafka-topics --bootstrap-server localhost:9092 --topic game_output --create --partitions 3 --replication-factor 1
 kafka-topics --bootstrap-server localhost:9092 --topic movement_commands --create --partitions 3 --replication-factor 1
+kafka-topics --bootstrap-server localhost:9092 --topic game_admin_commands --create --partitions 3 --replication-factor 1
+kafka-topics --bootstrap-server localhost:9092 --topic game_status --create --partitions 3 --replication-factor 1
+kafka-topics --bootstrap-server localhost:9092 --topic head_direction --create --partitions 3 --replication-factor 1
+
+
+
 
 # DELETE TOPICS
 # GO TO BROKER CLI
@@ -28,4 +34,7 @@ kafka-topics --delete --topic game_input --bootstrap-server localhost:9092
 kafka-topics --delete --topic game_commands --bootstrap-server localhost:9092
 kafka-topics --delete --topic game_output --bootstrap-server localhost:9092
 kafka-topics --delete --topic movement_commands --bootstrap-server localhost:9092
+kafka-topics --delete --topic game_admin_commands --bootstrap-server localhost:9092
+kafka-topics --delete --topic game_status --bootstrap-server localhost:9092
+kafka-topics --delete --topic head_direction --bootstrap-server localhost:9092
 

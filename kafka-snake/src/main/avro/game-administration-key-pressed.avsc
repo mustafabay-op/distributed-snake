@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "GameMovementCommand",
+  "name": "GameAdministrationCommand",
   "namespace": "op.kompetensdag.snake",
   "fields": [
     {
@@ -15,5 +15,5 @@
       "default": null
     }
   ],
-  "connect.name": "op.kompetensdag.snake.GameMovementCommand"
+  "connect.name": "op.kompetensdag.snake.GameAdministrationCommand"
 }
