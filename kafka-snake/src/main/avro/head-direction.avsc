@@ -1,10 +1,10 @@
 {
   "type": "record",
-  "name": "GameMovementCommand",
+  "name": "HeadDirection",
   "namespace": "op.kompetensdag.snake",
   "fields": [
     {
-      "name": "KEYPRESSED",
+      "name": "DIRECTION",
       "type": [
         "null",
         {
@@ -15,5 +15,5 @@
       "default": null
     }
   ],
-  "connect.name": "op.kompetensdag.snake.GameMovementCommand"
+  "connect.name": "op.kompetensdag.snake.HeadDirection"
 }
