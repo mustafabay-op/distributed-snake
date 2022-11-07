@@ -2,6 +2,8 @@ plugins {
     id 'org.springframework.boot' version '2.7.5'
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
     id 'java'
+    id 'org.openjfx.javafxplugin' version '0.0.13'
+    id 'application'
 }
 
 group = 'op.koko'
@@ -10,6 +12,14 @@ sourceCompatibility = '17'
 
 repositories {
     mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://repo.spring.io/snapshot' }
+    maven {
+        url "https://packages.confluent.io/maven/"
+    }
+    maven {
+        url "https://repository.mulesoft.org/nexus/content/repositories/public/"
+    }
 }
 
 dependencies {
@@ -20,10 +30,14 @@ dependencies {
     //Kafka
     implementation 'org.apache.kafka:kafka-streams'
     implementation 'org.springframework.kafka:spring-kafka'
-    //Jackson
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.13.4'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.4.2'
 }
+
+javafx {
+    version = "19"
+    modules = [ 'javafx.controls' ]
+}
+
+mainClassName = 'op.koko.snakeclient.Screen'
 
 tasks.named('test') {
     useJUnitPlatform()

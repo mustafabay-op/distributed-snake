@@ -4,7 +4,7 @@ docker-compose up -d
 # CREATE PRODUCER
 # OPEN BROKER CLI
 
-kafka-console-producer --bootstrap-server localhost:9092 --topic game_input
+kafka-console-producer --bootstrap-server localhost:29092 --topic game-input
 
 kafka-console-consumer --bootstrap-server localhost:9092 \
     --topic game_output \
