@@ -2,6 +2,7 @@ package op.kompetensdag.snake;
 
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
+import op.kompetensdag.kafkasnake.KompetensKafkaSnakeApplication;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
@@ -12,6 +13,8 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Named;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.util.Collections;
 import java.util.Map;
@@ -20,11 +23,12 @@ import java.util.concurrent.CountDownLatch;
 
 import static op.kompetensdag.snake.Topics.GAME_STATUS_TOPIC;
 
-
+@SpringBootApplication
 public class SnakeApplication {
 
 
     public static void main(String[] args) {
+        SpringApplication.run(SnakeApplication.class, args);
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-snake");
@@ -41,8 +45,7 @@ public class SnakeApplication {
         SpecificAvroSerde<GameStatus> gameStatusSerde = new SpecificAvroSerde<>();
         gameStatusSerde.configure(schemaRegistryProps, false);
 
-        KTable<String, GameStatus> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde), Materialized.as("GAME_STATUS_TABLE").with(Serdes.String(), gameStatusSerde));
-
+        KTable<String, GameStatus> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde), Materialized.with(Serdes.String(), gameStatusSerde));
 
 
         GameInputRouter.define(builder, schemaRegistryProps);
