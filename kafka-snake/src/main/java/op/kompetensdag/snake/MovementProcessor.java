@@ -4,9 +4,7 @@ import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import op.kompetensdag.snake.util.Join;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.*;
 
 import java.util.Map;
 
@@ -24,15 +22,23 @@ public class MovementProcessor {
         SpecificAvroSerde<HeadDirection> headDirSerde = new SpecificAvroSerde<>();
         headDirSerde.configure(schemaRegistryProps, false);
 
+        ValueJoiner<GameMovementCommand, GameStatus, Join<GameMovementCommand, GameStatus>> valueJoiner = (movementCommand, gameStatus) -> new Join<>(movementCommand, gameStatus);
         builder
                 .stream(GAME_MOVEMENT_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameMovementSerde))
-                .join(gameStatusKTable, Join::new)
-                .filter((k, movementAndStateJoin) -> movementAndStateJoin.r().getSTATUS().equals("RUNNING"))
-                .join(builder.table(HEAD_DIRECTION_TOPIC, Consumed.with(Serdes.String(), headDirSerde)), (movementAndStateJoin, headDirection) -> new Join<>(movementAndStateJoin.l(), headDirection))
-                .mapValues(movementAndStateJoin -> new Join<>(getIntendedHeadDirection(movementAndStateJoin.l()), movementAndStateJoin.r()))
+                .peek((key, value) -> System.out.println("Before join 232131245324"))
+/*                .join(gameStatusKTable, valueJoiner)
+                .peek((key, value) -> System.out.println("After join 232131245324"))
+                .filter((k, movementAndStateJoin) -> movementAndStateJoin.r().getSTATUS().equals("RUNNING"))*/
+                .peek((key, value) -> System.out.println("Survived gameStatus Filter!! 232131245324: key: " + key + " value : " + value))
+                //.join(builder.table(HEAD_DIRECTION_TOPIC, Consumed.with(Serdes.String(), headDirSerde)), (movementAndStateJoin, headDirection) -> new Join<>(movementAndStateJoin.l(), headDirection))
+                .join(builder.table(HEAD_DIRECTION_TOPIC, Consumed.with(Serdes.String(), headDirSerde)), (movementCommand, headDirection) -> new Join<>(movementCommand, headDirection))
+                .mapValues(movementAndHeadDirectionJoin -> new Join<>(getIntendedHeadDirection(movementAndHeadDirectionJoin.l()), movementAndHeadDirectionJoin.r()))
                 .filter((k, intendedAndCurrentHeadDirection) -> isIntendedMoveValid(intendedAndCurrentHeadDirection))
+                .peek((key, value) -> System.out.println("Survived validMove Filter!! 23232323295459 : head dir " + value.l()))
                 .mapValues(Join::l)
                 .to(HEAD_DIRECTION_TOPIC, Produced.with(Serdes.String(), headDirSerde));
+
+
     }
 
     private static boolean isIntendedMoveValid(Join<HeadDirection, HeadDirection> intendedAndCurrentHeadDirection) {

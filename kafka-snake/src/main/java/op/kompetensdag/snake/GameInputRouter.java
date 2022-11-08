@@ -1,9 +1,8 @@
 package op.kompetensdag.snake;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import op.kompetensdag.snake.events.GameAdministrationKeyPressed;
-import op.kompetensdag.snake.events.GameMovementKeyPressed;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Branched;
 import org.apache.kafka.streams.kstream.BranchedKStream;
@@ -16,17 +15,18 @@ import static op.kompetensdag.snake.Topics.*;
 
 public class GameInputRouter {
 
-    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps){
+    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps) {
         SpecificAvroSerde<GameMovementCommand> gameMovementCommandSpecificAvroSerde = new SpecificAvroSerde<>();
         gameMovementCommandSpecificAvroSerde.configure(schemaRegistryProps, false);
         SpecificAvroSerde<GameAdministrationCommand> gameAdministrationCommandSpecificAvroSerde = new SpecificAvroSerde<>();
         gameAdministrationCommandSpecificAvroSerde.configure(schemaRegistryProps, false);
 
 
-        BranchedKStream<String, String> gameInputBranched =
-                builder.stream(GAME_INPUT_TOPIC, Consumed.with(Serdes.String(), Serdes.String())).split();
+        BranchedKStream<String, String> gameInputBranched = builder
+                .stream(GAME_INPUT_TOPIC, Consumed.with(Serdes.String(), Serdes.String()))
+                .map((k, v) -> new KeyValue<>("1", v))
+                .split();
 
-        // return DirectionParser.parse(v.getCOMMAND()) != null;
 
         gameInputBranched.branch(
                 (k, v) -> GameMovementCommandParser.parse(v) != null,
@@ -51,8 +51,5 @@ public class GameInputRouter {
                 .mapValues(v -> v.KEYPRESSED + " : " + v.getKEYPRESSED() + "processed " + v.getClass())
                 .to(GAME_OUTPUT);
 
-
     }
-
-
 }
