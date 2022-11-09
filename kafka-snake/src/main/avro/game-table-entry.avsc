@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "GameTableEntry",
+  "namespace": "op.kompetensdag.snake.model",
+  "fields": [
+    {
+      "name": "x",
+      "type": "int"
+    },
+    {
+      "name": "y",
+      "type": "int"
+    },
+    {
+      "name": "busy",
+      "type": "boolean"
+    },
+    {
+      "name": "type",
+      "type": { "type": "enum", "name": "GameTableEntryType", "symbols" : ["SNAKE", "WALL"] }
+    }
+  ]
+}
