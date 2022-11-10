@@ -7,42 +7,45 @@ import op.kompetensdag.snake.model.GameStatus;
 import op.kompetensdag.snake.model.GameStatusRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Produced;
 
 import java.util.Map;
 
 import static op.kompetensdag.snake.Topics.*;
 
-public class AdministrationProcessor {
+public class InitializeGameProcessor {
 
-    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps, KTable<String, GameStatusRecord> gameStatusKTable) {
+    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps, KTable<String, GameStatus> gameStatusKTable) {
         SpecificAvroSerde<GameStatusRecord> gameStatusSerde = new SpecificAvroSerde<>();
         gameStatusSerde.configure(schemaRegistryProps, false);
-        SpecificAvroSerde<GameAdministrationCommandRecord> gameAdminSerde = new SpecificAvroSerde<>();
-        gameAdminSerde.configure(schemaRegistryProps, false);
+        SpecificAvroSerde<GameAdministrationCommandRecord> gameAdministrationSerde = new SpecificAvroSerde<>();
+        gameAdministrationSerde.configure(schemaRegistryProps, false);
 
         SpecificAvroSerde<HeadDirection> headDirSerde = new SpecificAvroSerde<>();
         headDirSerde.configure(schemaRegistryProps, false);
 
         builder
-                .stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdminSerde))
+                .stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdministrationSerde))
                 .peek((k, v) -> System.out.println("23213823821"))
-                .mapValues(v -> isSpaceRecord(v) ? new GameStatusRecord(GameStatus.STARTED) : null)
+                .mapValues(v -> isGameAdministrationKeyPressedEvent(v) ? new GameStatusRecord(GameStatus.STARTED) : null)
                 .to(GAME_STATUS_TOPIC, Produced.with(Serdes.String(), gameStatusSerde));
 
         builder
-                .stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdminSerde))
-                .peek((key, value) -> System.out.println("About to set head Direction to north if count equal 1."))
+                .stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdministrationSerde))
+                .peek((key, value) -> System.out.println("GAME_ADMINISTRATION_COMMANDS_TOPIC consumed, key: " + key + " value: " + value))
                 .groupByKey()
                 .count()
                 .toStream()
                 .peek((key, value) -> System.out.println("About filter on count 1. key/value: " + key + " " + value))
-                .filter((key, value) -> value.equals(2L))
+                .filter((key, value) -> value.equals(1L))
                 .peek((key, value) -> System.out.println("After filtering on count, setting head Direction to north."))
                 .mapValues(value -> new HeadDirection("NORTH"))
                 .to(HEAD_DIRECTION_TOPIC, Produced.with(Serdes.String(), headDirSerde));
 
-        gameStatusKTable.toStream().mapValues(v -> "GameStatus value: " + v + " value-type: " + v.getType()).to(GAME_OUTPUT, Produced.with(Serdes.String(), Serdes.String()));
+        gameStatusKTable.toStream().mapValues(v -> "GameStatusTable v: " + v + " v-name: " + v.name()).to(GAME_OUTPUT, Produced.with(Serdes.String(), Serdes.String()));
+
 
 
 
@@ -86,12 +89,13 @@ public class AdministrationProcessor {
 
     }
 
-    private static boolean isSpaceRecord(GameAdministrationCommandRecord v) {
-            try {
-                GameAdministrationCommand.valueOf(v.getType().name());
-                return true;
-            } catch (Exception e) {
-                return false;
-            }
+
+    private static boolean isGameAdministrationKeyPressedEvent(GameAdministrationCommandRecord v) {
+        try {
+            GameAdministrationCommand.valueOf(v.getType().name());
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

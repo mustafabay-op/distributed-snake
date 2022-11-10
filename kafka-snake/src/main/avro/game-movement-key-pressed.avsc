@@ -1,19 +1,21 @@
 {
   "type": "record",
-  "name": "GameMovementCommand",
-  "namespace": "op.kompetensdag.snake",
+  "name": "GameMovementKeyPressedRecord",
+  "namespace": "op.kompetensdag.snake.model",
   "fields": [
     {
-      "name": "KEYPRESSED",
-      "type": [
-        "null",
-        {
-          "type": "string",
-          "avro.java.string": "String"
-        }
-      ],
-      "default": null
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "GameMovementKeyPressed",
+        "symbols": [
+          "LEFT",
+          "RIGHT",
+          "UP",
+          "DOWN"
+        ]
+      }
     }
   ],
-  "connect.name": "op.kompetensdag.snake.GameMovementCommand"
+  "connect.name": "op.kompetensdag.snake.model.GameMovementKey"
 }

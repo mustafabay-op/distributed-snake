@@ -2,8 +2,8 @@ package op.kompetensdag.snake;
 
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import op.kompetensdag.kafkasnake.KompetensKafkaSnakeApplication;
-import org.apache.kafka.clients.admin.Admin;
+import op.kompetensdag.snake.model.GameStatus;
+import op.kompetensdag.snake.model.GameStatusRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -12,7 +12,6 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.kstream.Named;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -42,17 +41,21 @@ public class SnakeApplication {
 
         final StreamsBuilder builder = new StreamsBuilder();
 
-        SpecificAvroSerde<GameStatus> gameStatusSerde = new SpecificAvroSerde<>();
+        SpecificAvroSerde<GameStatusRecord> gameStatusSerde = new SpecificAvroSerde<>();
         gameStatusSerde.configure(schemaRegistryProps, false);
 
-        KTable<String, GameStatus> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde), Materialized.with(Serdes.String(), gameStatusSerde));
+        KTable<String, GameStatusRecord> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde), Materialized.with(Serdes.String(), gameStatusSerde));
 
 
         GameInputRouter.define(builder, schemaRegistryProps);
-        MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable);
         AdministrationProcessor.define(builder, schemaRegistryProps, gameStatusKTable);
+        MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable);
 
 
+        //GameStatusUpdateRouter.define(builder, schemaRegistryProps);
+        // InitializeGameProcessor.define(builder, schemaRegistryProps);
+
+        // builder.stream(GAME_INITIALIZING_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde))
 
 
         final Topology topology = builder.build();

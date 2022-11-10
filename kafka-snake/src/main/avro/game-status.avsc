@@ -1,19 +1,22 @@
 {
   "type": "record",
-  "name": "GameStatus",
-  "namespace": "op.kompetensdag.snake",
+  "name": "GameStatusRecord",
+  "namespace": "op.kompetensdag.snake.model",
   "fields": [
     {
-      "name": "STATUS",
-      "type": [
-        "null",
-        {
-          "type": "string",
-          "avro.java.string": "String"
-        }
-      ],
-      "default": null
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "GameStatus",
+        "symbols": [
+          "INITIALIZING",
+          "PAUSED",
+          "RUNNING",
+          "STARTED",
+          "ENDED"
+        ]
+      }
     }
   ],
-  "connect.name": "op.kompetensdag.snake.GameStatus"
+  "connect.name": "op.kompetensdag.snake.model.GameStatus"
 }

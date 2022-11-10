@@ -1,19 +1,18 @@
 {
   "type": "record",
-  "name": "GameAdministrationCommand",
-  "namespace": "op.kompetensdag.snake",
+  "name": "GameAdministrationCommandRecord",
+  "namespace": "op.kompetensdag.snake.model",
   "fields": [
     {
-      "name": "KEYPRESSED",
-      "type": [
-        "null",
-        {
-          "type": "string",
-          "avro.java.string": "String"
-        }
-      ],
-      "default": null
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "GameAdministrationCommand",
+        "symbols": [
+          "SPACE"
+        ]
+      }
     }
   ],
-  "connect.name": "op.kompetensdag.snake.GameAdministrationCommand"
+  "connect.name": "op.kompetensdag.snake.model.GameAdministrationCommand"
 }
