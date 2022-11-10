@@ -4,7 +4,7 @@ docker-compose up -d
 # CREATE PRODUCER
 # OPEN BROKER CLI
 
-kafka-console-producer --bootstrap-server localhost:29092 --topic game-input
+kafka-console-producer --bootstrap-server localhost:9092 --topic game_input
 
 kafka-console-consumer --bootstrap-server localhost:9092 \
     --topic game_output \
@@ -23,8 +23,13 @@ kafka-topics --bootstrap-server localhost:9092 --topic game_output --create --pa
 kafka-topics --bootstrap-server localhost:9092 --topic movement_commands --create --partitions 3 --replication-factor 1 |
 kafka-topics --bootstrap-server localhost:9092 --topic game_admin_commands --create --partitions 3 --replication-factor 1 |
 kafka-topics --bootstrap-server localhost:9092 --topic game_status --create --partitions 3 --replication-factor 1 |
-kafka-topics --bootstrap-server localhost:9092 --topic head_direction --create --partitions 3 --replication-factor 1
-kafka-topics --bootstrap-server localhost:9092 --topic play_test_topic --create --partitions 3 --replication-factor 1
+kafka-topics --bootstrap-server localhost:9092 --topic head_direction --create --partitions 3 --replication-factor 1 |
+kafka-topics --bootstrap-server localhost:9092 --topic play_test_topic --create --partitions 3 --replication-factor 1 |
+kafka-topics --bootstrap-server localhost:9092 --topic client_responses --create --partitions 3 --replication-factor 1 |
+kafka-topics --bootstrap-server localhost:9092 --topic game-table-entries --create --partitions 3 --replication-factor 1 |
+kafka-topics --bootstrap-server localhost:9092 --topic game_initializing --create --partitions 3 --replication-factor 1
+
+kafka-topics --bootstrap-server localhost:9092 --topic game_input_2 --create --partitions 3 --replication-factor 1
 
 
 
@@ -38,4 +43,10 @@ kafka-topics --delete --topic movement_commands --bootstrap-server localhost:909
 kafka-topics --delete --topic game_admin_commands --bootstrap-server localhost:9092 |
 kafka-topics --delete --topic game_status --bootstrap-server localhost:9092 |
 kafka-topics --delete --topic head_direction --bootstrap-server localhost:9092
+kafka-topics --delete --topic play_test_topic --bootstrap-server localhost:9092 |
+kafka-topics --delete --topic client_responses --bootstrap-server localhost:9092 |
+kafka-topics --delete --topic game-table-entries --bootstrap-server localhost:9092 |
+kafka-topics --delete --topic game_initializing --bootstrap-server localhost:9092
+
+
 
