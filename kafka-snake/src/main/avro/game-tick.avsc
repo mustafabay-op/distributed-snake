@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "GameTick",
+  "namespace": "op.kompetensdag.snake.model",
+  "fields": [
+    {
+      "name": "occuredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

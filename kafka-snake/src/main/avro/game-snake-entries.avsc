@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "GameSnakeEntries",
+  "namespace": "op.kompetensdag.snake.model",
+  "fields": [
+    {
+      "name": "entries",
+      "type": { "type": "array", "items": "GameTableEntry" }
+    }
+  ]
+}
