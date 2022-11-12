@@ -27,10 +27,12 @@ kafka-topics --bootstrap-server localhost:9092 --topic head_direction --create -
 kafka-topics --bootstrap-server localhost:9092 --topic play_test_topic --create --partitions 3 --replication-factor 1 |
 kafka-topics --bootstrap-server localhost:9092 --topic client_responses --create --partitions 3 --replication-factor 1 |
 kafka-topics --bootstrap-server localhost:9092 --topic game-table-entries --create --partitions 3 --replication-factor 1 |
-kafka-topics --bootstrap-server localhost:9092 --topic game_initializing --create --partitions 3 --replication-factor 1
-kafka-topics --bootstrap-server localhost:9092 --topic game_ticks --create --partitions 3 --replication-factor 1
+kafka-topics --bootstrap-server localhost:9092 --topic game_initializing --create --partitions 3 --replication-factor 1  |
+kafka-topics --bootstrap-server localhost:9092 --topic game_ticks --create --partitions 3 --replication-factor 1  |
 
-kafka-topics --bootstrap-server localhost:9092 --topic game_input_2 --create --partitions 3 --replication-factor 1
+kafka-topics --bootstrap-server localhost:9092 --topic head_direction_3 --create --partitions 3 --replication-factor 1
+
+kafka-topics --bootstrap-server localhost:9092 --topic head_direction_2 --create --partitions 3 --replication-factor 1
 
 
 

@@ -1,19 +1,21 @@
 {
   "type": "record",
-  "name": "HeadDirection",
-  "namespace": "op.kompetensdag.snake",
+  "name": "HeadDirectionRecord",
+  "namespace": "op.kompetensdag.snake.model",
   "fields": [
     {
-      "name": "DIRECTION",
-      "type": [
-        "null",
-        {
-          "type": "string",
-          "avro.java.string": "String"
-        }
-      ],
-      "default": null
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "HeadDirection",
+        "symbols": [
+          "NORTH",
+          "SOUTH",
+          "WEST",
+          "EAST"
+        ]
+      }
     }
   ],
-  "connect.name": "op.kompetensdag.snake.HeadDirection"
+  "connect.name": "op.kompetensdag.snake.model.HeadDirection"
 }

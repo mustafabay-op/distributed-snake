@@ -1,7 +1,6 @@
 package op.kompetensdag.snake.processors;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import op.kompetensdag.snake.HeadDirection;
 import op.kompetensdag.snake.Topics;
 import op.kompetensdag.snake.commands.ProcessTickCommand;
 import op.kompetensdag.snake.model.*;
@@ -28,7 +27,7 @@ public class TickProcessor {
         SpecificAvroSerde<GameTablePosition> gameTablePositionSerde = new SpecificAvroSerde<>();
         gameTablePositionSerde.configure(schemaRegistryProps, true);
 
-        SpecificAvroSerde<HeadDirection> headDirSerde = new SpecificAvroSerde<>();
+        SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
         headDirSerde.configure(schemaRegistryProps, false);
 
         SpecificAvroSerde<GameTick> tickSerde = new SpecificAvroSerde<>();
@@ -37,7 +36,7 @@ public class TickProcessor {
         SpecificAvroSerde<GameStatusRecord> gameStatusSerde = new SpecificAvroSerde<>();
         gameStatusSerde.configure(schemaRegistryProps, false);
 
-        KTable<String,HeadDirection> headDirection =
+        KTable<String,HeadDirectionRecord> headDirection =
                 builder.
                         table(HEAD_DIRECTION_TOPIC,Consumed.with(Serdes.String(),headDirSerde));
 
@@ -95,7 +94,7 @@ public class TickProcessor {
 
         builder.stream(Topics.GAME_TICKS,Consumed.with(Serdes.String(),tickSerde))
                 .mapValues( (game,tick) -> ProcessTickCommand.builder().gameId(game).gameTick(tick))
-                .join(headDirection,(cmdBuilder,direction) -> cmdBuilder.headDirection(direction))
+                .join(headDirection,(cmdBuilder,direction) -> cmdBuilder.headDirection(direction.getType()))
                 .join(snakeHead,(cmdBuilder,head) -> cmdBuilder.snakeHead(head))
                 .selectKey((k,v) -> v.build().getNewHeadPosition())
                 .leftJoin(positionUsage,(readOnlyKey, cmdBuilder, gameTableEntry) -> cmdBuilder.newPositionEntry(gameTableEntry))
