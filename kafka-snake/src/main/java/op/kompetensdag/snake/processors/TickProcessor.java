@@ -9,6 +9,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -105,7 +106,13 @@ public class TickProcessor {
                             builderKStream
                                     .mapValues( (v) -> new GameStatusRecord(GameStatus.ENDED))
                                     .to(Topics.GAME_STATUS_TOPIC,Produced.with(Serdes.String(),gameStatusSerde))))
-                .noDefaultBranch();
+                .defaultBranch(
+                        Branched.withConsumer( (builderKStream) ->
+                            builderKStream
+                                    .join(snakeTail,(cmdBuilder,tail) -> cmdBuilder.snakeTail(tail))
+                                    .flatMapValues( cmdBuilder -> cmdBuilder.build().moveSnake())
+                                    .to(GAME_TABLE_ENTRIES,Produced.with(Serdes.String(),gameTableEntrySerde))
+                        ));
 
     }
 
