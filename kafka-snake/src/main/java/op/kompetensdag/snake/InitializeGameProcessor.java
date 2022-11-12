@@ -1,10 +1,7 @@
 package op.kompetensdag.snake;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import op.kompetensdag.snake.model.GameAdministrationCommand;
-import op.kompetensdag.snake.model.GameAdministrationCommandRecord;
-import op.kompetensdag.snake.model.GameStatus;
-import op.kompetensdag.snake.model.GameStatusRecord;
+import op.kompetensdag.snake.model.*;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
@@ -23,7 +20,7 @@ public class InitializeGameProcessor {
         SpecificAvroSerde<GameAdministrationCommandRecord> gameAdministrationSerde = new SpecificAvroSerde<>();
         gameAdministrationSerde.configure(schemaRegistryProps, false);
 
-        SpecificAvroSerde<HeadDirection> headDirSerde = new SpecificAvroSerde<>();
+        SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
         headDirSerde.configure(schemaRegistryProps, false);
 
         builder
@@ -41,7 +38,7 @@ public class InitializeGameProcessor {
                 .peek((key, value) -> System.out.println("About filter on count 1. key/value: " + key + " " + value))
                 .filter((key, value) -> value.equals(1L))
                 .peek((key, value) -> System.out.println("After filtering on count, setting head Direction to north."))
-                .mapValues(value -> new HeadDirection("NORTH"))
+                .mapValues(value -> new HeadDirectionRecord(HeadDirection.NORTH))
                 .to(HEAD_DIRECTION_TOPIC, Produced.with(Serdes.String(), headDirSerde));
 
         gameStatusKTable.toStream().mapValues(v -> "GameStatusTable v: " + v + " v-name: " + v.name()).to(GAME_OUTPUT, Produced.with(Serdes.String(), Serdes.String()));

@@ -7,6 +7,7 @@ public class Topics {
     public static final String GAME_ADMINISTRATION_COMMANDS_TOPIC = "game_admin_commands";
     public static final String GAME_STATUS_TOPIC = "game_status";
     public static final String HEAD_DIRECTION_TOPIC = "head_direction";
+    public static final String HEAD_DIRECTION_TOPIC_3 = "head_direction_3";
 
     public static final String GAME_OUTPUT = "game_output";
 
