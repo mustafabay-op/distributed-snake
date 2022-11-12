@@ -17,8 +17,8 @@ public class GameOutputProducer {
         this.outputTopic = topic;
     }
 
-    public Future<RecordMetadata> produce(final Color command) {
-        final ProducerRecord<String, String> producerRecord = new ProducerRecord<>(outputTopic, "KEY", "12-14-" + command);
+    public Future<RecordMetadata> produce(final Color command, String gameId) {
+        final ProducerRecord<String, String> producerRecord = new ProducerRecord<>(outputTopic, gameId, "12-14-" + command);
         return producer.send(producerRecord);
     }
 }

@@ -2,7 +2,11 @@ package op.koko.snakeclient;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import op.koko.snakeclient.model.Dot;
@@ -28,24 +32,51 @@ public class Screen extends Application {
     public static final String GAME_INPUT = "game-input";
     public static final String GAME_OUTPUT = "game-output";
 
-    public final Queue<Dot> queue = new LinkedList<>();
-    public final Rectangle[][] rectangles = new Rectangle[HEIGHT][WIDTH];
+    public static boolean isStarted = false;
+
+    private final Queue<Dot> queue = new LinkedList<>();
+    private final Rectangle[][] rectangles = new Rectangle[HEIGHT][WIDTH];
+
+    private GridPane pane;
+    private Scene playScene;
+    private Scene mainMenuScene;
+    private Controller controller;
+    private RectangleUpdater rectangleUpdater;
+    private Stage stage;
 
     @Override
     public void start(Stage stage) {
-        GridPane pane = setupGrid();
-        final Scene scene = new Scene(pane, 675, 675);
-
-        final Controller controller = setupController();
-        setupKeyEvents(scene, controller);
-
-        RectangleUpdater rectangleUpdater = new RectangleUpdater(queue, rectangles);
-        rectangleUpdater.start();
         setupConsumer();
+        this.stage = stage;
+        controller = setupController();
+        showMainMenu();
+    }
 
-
-        stage.setScene(scene);
+    private void showMainMenu() {
+        isStarted = false;
+        Pane pane = new Pane();
+        Button button = new Button("START GAME");
+        button.setOnAction(e -> showFreshPlayScene());
+        Rectangle bg = new Rectangle(675, 675);
+        bg.setFill(Color.ALICEBLUE);
+        VBox vbox = new VBox(50, button);
+        pane.getChildren().addAll(bg, vbox);
+        mainMenuScene = new Scene(pane, 675, 675);
+        stage.setScene(mainMenuScene);
         stage.show();
+    }
+
+    public void showFreshPlayScene() {
+        pane = setupGrid();
+        playScene = new Scene(pane, 675, 675);
+        rectangleUpdater = new RectangleUpdater(queue, rectangles);
+
+        setupKeyEvents(playScene, controller);
+
+        stage.setScene(playScene);
+        stage.show();
+        rectangleUpdater.start();
+        isStarted = true;
     }
 
     private void setupConsumer() {
@@ -79,6 +110,7 @@ public class Screen extends Application {
                 case RIGHT -> controller.right();
                 case LEFT -> controller.left();
                 case SPACE -> controller.space();
+                case S -> controller.s();
             }
         });
     }
