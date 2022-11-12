@@ -28,9 +28,6 @@ public class Screen extends Application {
     public static final int WIDTH = 26;
     public static final String GAME_INPUT = "game-input";
     public static final String GAME_OUTPUT = "game-output";
-
-    public static boolean isStarted = false;
-
     private final Queue<Dot> queue = new LinkedList<>();
     private final Rectangle[][] rectangles = new Rectangle[HEIGHT][WIDTH];
 
@@ -50,7 +47,6 @@ public class Screen extends Application {
     }
 
     private void showMainMenu() {
-        isStarted = false;
         Pane pane = new Pane();
         Button button = new Button("START GAME");
         button.setOnAction(e -> showFreshPlayScene());
@@ -74,7 +70,6 @@ public class Screen extends Application {
         stage.show();
         controller.setGameId(UUID.randomUUID().toString());
         rectangleUpdater.start();
-        isStarted = true;
     }
 
     private void setupConsumer() {

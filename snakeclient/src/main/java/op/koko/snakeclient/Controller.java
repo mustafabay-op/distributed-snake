@@ -12,27 +12,22 @@ public class Controller {
     }
 
     public void up() {
-        if (Screen.isStarted)
             gameOutputProducer.produce(Color.GREEN, gameId);
     }
 
     public void down() {
-        if (Screen.isStarted)
             gameOutputProducer.produce(Color.BLACK, gameId);
     }
 
     public void left() {
-        if (Screen.isStarted)
             gameOutputProducer.produce(Color.WHITE, gameId);
     }
 
     public void right() {
-        if (Screen.isStarted)
             gameOutputProducer.produce(Color.GREEN, gameId);
     }
 
     public void space() {
-        if (Screen.isStarted)
             gameOutputProducer.produce(Color.WHITE, gameId);
     }
 
