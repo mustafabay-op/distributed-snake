@@ -2,8 +2,6 @@ package op.koko.snakeclient;
 
 import op.koko.snakeclient.model.Color;
 
-import java.util.UUID;
-
 public class Controller {
     private final GameOutputProducer gameOutputProducer;
 
@@ -38,10 +36,7 @@ public class Controller {
             gameOutputProducer.produce(Color.WHITE, gameId);
     }
 
-    public void s() {
-        if (!Screen.isStarted) {
-            gameId = UUID.randomUUID().toString();
-            Screen.isStarted = true;
-        }
+    public void setGameId(String gameId) {
+        this.gameId = gameId;
     }
 }

@@ -20,10 +20,7 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 
-import java.util.LinkedList;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.Queue;
+import java.util.*;
 
 public class Screen extends Application {
 
@@ -75,6 +72,7 @@ public class Screen extends Application {
 
         stage.setScene(playScene);
         stage.show();
+        controller.setGameId(UUID.randomUUID().toString());
         rectangleUpdater.start();
         isStarted = true;
     }
@@ -110,7 +108,6 @@ public class Screen extends Application {
                 case RIGHT -> controller.right();
                 case LEFT -> controller.left();
                 case SPACE -> controller.space();
-                case S -> controller.s();
             }
         });
     }
