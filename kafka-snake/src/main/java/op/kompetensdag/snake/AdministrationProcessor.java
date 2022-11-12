@@ -2,6 +2,7 @@ package op.kompetensdag.snake;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import op.kompetensdag.snake.model.*;
+import op.kompetensdag.snake.model.HeadDirection;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
