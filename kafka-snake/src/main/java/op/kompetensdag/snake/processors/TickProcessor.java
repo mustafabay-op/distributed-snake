@@ -1,7 +1,6 @@
 package op.kompetensdag.snake.processors;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import op.kompetensdag.snake.GameStatus;
 import op.kompetensdag.snake.HeadDirection;
 import op.kompetensdag.snake.Topics;
 import op.kompetensdag.snake.commands.ProcessTickCommand;
@@ -34,7 +33,7 @@ public class TickProcessor {
         SpecificAvroSerde<GameTick> tickSerde = new SpecificAvroSerde<>();
         tickSerde.configure(schemaRegistryProps, false);
 
-        SpecificAvroSerde<GameStatus> gameStatusSerde = new SpecificAvroSerde<>();
+        SpecificAvroSerde<GameStatusRecord> gameStatusSerde = new SpecificAvroSerde<>();
         gameStatusSerde.configure(schemaRegistryProps, false);
 
         KTable<String,HeadDirection> headDirection =
@@ -104,8 +103,8 @@ public class TickProcessor {
                 .branch((game,cmdBuilder) -> cmdBuilder.build().isNewHeadPositionTaken(),
                         Branched.withConsumer( (builderKStream) ->
                             builderKStream
-                                    .mapValues( (v) -> new GameStatus("END"))
-                                    .to("game-status",Produced.with(Serdes.String(),gameStatusSerde))))
+                                    .mapValues( (v) -> new GameStatusRecord(GameStatus.ENDED))
+                                    .to(Topics.GAME_STATUS_TOPIC,Produced.with(Serdes.String(),gameStatusSerde))))
                 .noDefaultBranch();
 
     }
