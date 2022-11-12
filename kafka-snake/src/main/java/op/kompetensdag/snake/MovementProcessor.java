@@ -26,7 +26,7 @@ public class MovementProcessor {
         SpecificAvroSerde<HeadDirection> headDirSerde = new SpecificAvroSerde<>();
         headDirSerde.configure(schemaRegistryProps, false);
 
-        KTable<String, HeadDirection> headDirectionKTable = builder.table(HEAD_DIRECTION_TOPIC, Consumed.with(Serdes.String(), headDirSerde));
+        //KTable<String, HeadDirection> headDirectionKTable = builder.table(HEAD_DIRECTION_TOPIC, Consumed.with(Serdes.String(), headDirSerde));
         // headDirectionKTable.mapValues(v -> "HeadDir: " + v + ", Dir: " + v.getDIRECTION()).toStream().to(GAME_OUTPUT);
 
 

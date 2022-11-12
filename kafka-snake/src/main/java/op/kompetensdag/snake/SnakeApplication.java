@@ -4,6 +4,7 @@ import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import op.kompetensdag.snake.model.GameStatus;
 import op.kompetensdag.snake.model.GameStatusRecord;
+import op.kompetensdag.snake.processors.TickProcessor;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -50,7 +51,7 @@ public class SnakeApplication {
         GameInputRouter.define(builder, schemaRegistryProps);
         AdministrationProcessor.define(builder, schemaRegistryProps, gameStatusKTable);
         MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable);
-
+        TickProcessor.define(builder,schemaRegistryProps);
 
         //GameStatusUpdateRouter.define(builder, schemaRegistryProps);
         // InitializeGameProcessor.define(builder, schemaRegistryProps);

@@ -18,5 +18,5 @@ public class Topics {
 
     public static final String ILLEGAL_ARGUMENTS_TOPIC = "Illegal_arguments_topic";
 
-    public static final String GAME_TICKS = "game-ticks";
+    public static final String GAME_TICKS = "game_ticks";
 }
