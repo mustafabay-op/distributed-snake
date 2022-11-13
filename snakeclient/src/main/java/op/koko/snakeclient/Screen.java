@@ -1,11 +1,12 @@
 package op.koko.snakeclient;
 
 import javafx.application.Application;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.Hyperlink;
+import javafx.scene.control.Label;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
@@ -29,6 +30,7 @@ public class Screen extends Application {
     public static final String GAME_INPUT = "game-input";
     public static final String GAME_OUTPUT = "game-output";
     private static final Queue<Dot> queue = new LinkedList<>();
+    public static final String MAIN_MENU_STYLESHEET = "/mainmenu.css";
     private final Rectangle[][] rectangles = new Rectangle[HEIGHT][WIDTH];
 
     private GridPane pane;
@@ -46,21 +48,37 @@ public class Screen extends Application {
     @Override
     public void start(Stage stage) {
         this.stage = stage;
-        controller = setupController();
+        this.controller = setupController();
+        this.mainMenuScene = createMainMenuScene();
         showMainMenuScene();
     }
 
     private void showMainMenuScene() {
-        Pane pane = new Pane();
-        Button button = new Button("START GAME");
-        button.setOnAction(e -> showFreshPlayScene());
-        Rectangle bg = new Rectangle(675, 675);
-        bg.setFill(Color.ALICEBLUE);
-        VBox vbox = new VBox(50, button);
-        pane.getChildren().addAll(bg, vbox);
-        mainMenuScene = new Scene(pane, 675, 675);
         stage.setScene(mainMenuScene);
         stage.show();
+    }
+
+    private Scene createMainMenuScene() {
+        Hyperlink startGameLink = new Hyperlink("START GAME");
+        Label headingLabel = new Label("DISTRIBUTED SNAKE");
+        headingLabel.setAlignment(Pos.TOP_CENTER);
+        startGameLink.setAlignment(Pos.CENTER);
+        startGameLink.setOnAction(e -> showFreshPlayScene());
+        HBox startGameHBox = new HBox(1, startGameLink);
+        HBox headingHBox = new HBox(1, headingLabel);
+        startGameHBox.setAlignment(Pos.CENTER);
+        headingHBox.setAlignment(Pos.TOP_CENTER);
+        VBox vbox = new VBox(50, headingHBox, startGameHBox);
+        vbox.setAlignment(Pos.CENTER);
+        vbox.setBackground(Background.fill(Color.BLACK));
+
+        Scene scene = new Scene(vbox, 675, 675);
+        setSceneStylesheet(scene, MAIN_MENU_STYLESHEET);
+        return scene;
+    }
+
+    private void setSceneStylesheet(Scene scene, String stylesheet) {
+        scene.getStylesheets().add(getClass().getResource(stylesheet).toExternalForm());
     }
 
     public void showFreshPlayScene() {
