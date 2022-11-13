@@ -38,7 +38,7 @@ public class ProcessAdminCommand {
     }
 
     private GameTableEntry getSnakeBodyPart(Position position) {
-        GameTablePosition snakeBodyPartPosition = GameTablePosition.newBuilder(new GameTablePosition()).setX(position.getX()).setY(position.getY()).build();
+        TablePosition snakeBodyPartPosition = TablePosition.newBuilder(new TablePosition()).setX(position.getX()).setY(position.getY()).build();
         return GameTableEntry.newBuilder(new GameTableEntry()).setBusy(true).setPosition(snakeBodyPartPosition).setType(GameTableEntryType.SNAKE).build();
     }
 }

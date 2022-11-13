@@ -8,7 +8,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -18,14 +18,18 @@ import static op.kompetensdag.snake.Topics.HEAD_DIRECTION_TOPIC;
 public class TickProcessor {
 
     public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps){
+
+        SpecificAvroSerde<GameTablePosition> gameTablePositionSerde = new SpecificAvroSerde<>();
+        gameTablePositionSerde.configure(schemaRegistryProps, true);
+
         SpecificAvroSerde<GameTableEntry> gameTableEntrySerde = new SpecificAvroSerde<>();
         gameTableEntrySerde.configure(schemaRegistryProps, false);
 
         SpecificAvroSerde<GameSnakeEntries> gameTableEntriesSerde = new SpecificAvroSerde<>();
         gameTableEntriesSerde.configure(schemaRegistryProps, false);
 
-        SpecificAvroSerde<GameTablePosition> gameTablePositionSerde = new SpecificAvroSerde<>();
-        gameTablePositionSerde.configure(schemaRegistryProps, true);
+        SpecificAvroSerde<TablePosition> tablePositionSerde = new SpecificAvroSerde<>();
+        tablePositionSerde.configure(schemaRegistryProps, true);
 
         SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
         headDirSerde.configure(schemaRegistryProps, false);
@@ -55,7 +59,7 @@ public class TickProcessor {
                 tableEntryLog
                         .filter((game,tableEntry) -> tableEntry.getType() == GameTableEntryType.SNAKE)
                         .groupByKey()
-                        .aggregate(()-> new GameSnakeEntries(),(game,newEntry,entries) -> {
+                        .aggregate(()-> GameSnakeEntries.newBuilder().setEntries(new ArrayList<>()).build(),(game, newEntry, entries) -> {
                             List<GameTableEntry> list = entries.getEntries();
                             if(newEntry.getBusy()){
                                 list.add(newEntry);
@@ -75,7 +79,8 @@ public class TickProcessor {
 
         KTable<GameTablePosition,GameTableEntry> positionUsage  =
                 tableEntryLog
-                        .groupBy( (k,v) -> v.getPosition())
+                        .groupBy( (gameId,entry) -> new GameTablePosition(entry.getPosition(),gameId),
+                                Grouped.keySerde(gameTablePositionSerde))
                         .reduce( (currentValue, next) -> next);
 
 
@@ -96,8 +101,11 @@ public class TickProcessor {
                 .mapValues( (game,tick) -> ProcessTickCommand.builder().gameId(game).gameTick(tick))
                 .join(headDirection,(cmdBuilder,direction) -> cmdBuilder.headDirection(direction.getType()))
                 .join(snakeHead,(cmdBuilder,head) -> cmdBuilder.snakeHead(head))
-                .selectKey((k,v) -> v.build().getNewHeadPosition())
-                .leftJoin(positionUsage,(readOnlyKey, cmdBuilder, gameTableEntry) -> cmdBuilder.newPositionEntry(gameTableEntry))
+                .selectKey((gameId,cmdBuilder) -> new GameTablePosition(cmdBuilder.build().getNewHeadPosition(),gameId))
+//                .groupByKey(Grouped.keySerde(gameTablePositionSerde))
+                .leftJoin(positionUsage,
+                            (readOnlyKey, cmdBuilder, gameTableEntry) -> cmdBuilder.newPositionEntry(gameTableEntry),
+                            Joined.keySerde(gameTablePositionSerde))
                 .selectKey((k,v) -> v.build().getGameId())
                 .split()
                 .branch((game,cmdBuilder) -> cmdBuilder.build().isNewHeadPositionTaken(),

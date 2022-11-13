@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "TablePosition",
+  "namespace": "op.kompetensdag.snake.model",
+  "fields": [
+    {
+      "name": "x",
+      "type": "int"
+    },
+    {
+      "name": "y",
+      "type": "int"
+    }
+  ]
+}

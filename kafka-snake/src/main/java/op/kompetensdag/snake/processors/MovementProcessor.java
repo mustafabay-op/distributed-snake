@@ -4,8 +4,6 @@ import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import op.kompetensdag.snake.Topics;
 import op.kompetensdag.snake.model.*;
 import op.kompetensdag.snake.util.Join;
-import op.kompetensdag.snake.model.HeadDirection;
-import org.apache.kafka.common.serialization.Serde;
 
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;

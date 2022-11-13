@@ -5,7 +5,7 @@
   "fields": [
     {
       "name": "position",
-      "type": "GameTablePosition"
+      "type": "TablePosition"
     },
     {
       "name": "busy",

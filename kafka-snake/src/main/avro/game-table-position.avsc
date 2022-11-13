@@ -4,12 +4,12 @@
   "namespace": "op.kompetensdag.snake.model",
   "fields": [
     {
-      "name": "x",
-      "type": "int"
+      "name": "position",
+      "type": "TablePosition"
     },
     {
-      "name": "y",
-      "type": "int"
+      "name": "gameId",
+      "type": "string"
     }
   ]
 }
