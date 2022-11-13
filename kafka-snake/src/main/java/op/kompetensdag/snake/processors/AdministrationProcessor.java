@@ -12,6 +12,7 @@ import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Produced;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static op.kompetensdag.snake.Topics.*;
 
@@ -33,19 +34,19 @@ public class AdministrationProcessor {
 
         builder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdminSerde))
                 .mapValues((gameId, gameAdminCommand) -> ProcessAdminCommand.builder().gameId(gameId).gameAdministrationCommand(gameAdminCommand.getType()))
-                .join(gameStatusKTable, (cmdBuilder, gameStatus) -> cmdBuilder.gameStatus(GameStatus.ENDED)) //gameStatus.getType()))
+                .leftJoin(gameStatusKTable, (cmdBuilder, gameStatus) -> cmdBuilder.gameStatus(Optional.ofNullable(gameStatus).map( gs -> gs.getType()).orElse(null))) //gameStatus.getType()))
                 .split()
-                .branch((gameId, cmdBuilder) -> cmdBuilder.build().getGameStatus().equals(GameStatus.ENDED),
+                .branch((gameId, cmdBuilder) -> cmdBuilder.build().shouldInitializeGame(),
                         Branched.withConsumer(cmdBuilder ->
                                 cmdBuilder
                                         .mapValues(value -> new GameStatusRecord(GameStatus.INITIALIZING))
                                         .to(Topics.GAME_STATUS_TOPIC, Produced.with(Serdes.String(), gameStatusSerde))))
-                .branch((gameId, cmdBuilder) -> cmdBuilder.build().getGameStatus().equals(GameStatus.RUNNING),
+                .branch((gameId, cmdBuilder) -> cmdBuilder.build().shouldPauseGame(),
                         Branched.withConsumer(cmdBuilder ->
                                 cmdBuilder
                                         .mapValues(value -> new GameStatusRecord(GameStatus.PAUSED))
                                         .to(Topics.GAME_STATUS_TOPIC, Produced.with(Serdes.String(), gameStatusSerde))))
-                .branch((gameId, cmdBuilder) -> cmdBuilder.build().getGameStatus().equals(GameStatus.PAUSED),
+                .branch((gameId, cmdBuilder) -> cmdBuilder.build().shouldResumeGame(),
                         Branched.withConsumer(cmdBuilder ->
                                 cmdBuilder.mapValues(value -> new GameStatusRecord(GameStatus.RUNNING))
                                         .to(Topics.GAME_STATUS_TOPIC, Produced.with(Serdes.String(), gameStatusSerde))))

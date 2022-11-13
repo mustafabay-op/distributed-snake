@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "ProcessTickCommand",
+  "namespace": "op.kompetensdag.snake.model",
+  "fields": [
+    {
+      "name": "gameId",
+      "type": "string"
+    },
+    {
+      "name": "gameTick",
+      "type": "GameTick"
+    },
+    {
+      "name": "headDirection",
+      "type": "HeadDirection"
+    },
+    {
+      "name": "snakeHead",
+      "type": "GameTableEntry"
+    },
+    {
+      "name": "snakeTail",
+      "type": "GameTableEntry"
+    }
+  ]
+}

@@ -29,6 +29,18 @@ public class ProcessAdminCommand {
         return merge;
     }
 
+    public boolean shouldInitializeGame(){
+        return getGameStatus() == null || getGameStatus() == GameStatus.ENDED;
+    }
+
+    public boolean shouldPauseGame(){
+        return getGameStatus() == GameStatus.RUNNING;
+    }
+
+    public boolean shouldResumeGame(){
+        return getGameStatus() == GameStatus.PAUSED;
+    }
+
     private List<GameTableEntry> getInitialWalls(int width, int height) {
         return GameWall.getWalls(width, height);
     }

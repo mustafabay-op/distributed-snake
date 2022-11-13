@@ -58,8 +58,8 @@ public class SnakeApplication {
         KTable<String, GameStatusRecord> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde));
         AdministrationProcessor.define(builder, schemaRegistryProps, gameStatusKTable, headDirectionRecordKTable3);
         MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable, headDirectionRecordKTable3);
-        TickProcessor.define(builder, schemaRegistryProps);
         TickGenerator.define(gameStatusKTable,schemaRegistryProps);
+        TickProcessor.define(builder, schemaRegistryProps,headDirectionRecordKTable3);
 
 
         final Topology topology = builder.build();
