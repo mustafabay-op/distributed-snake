@@ -18,17 +18,17 @@ public class GameInputRouter {
 
 
     public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps) {
+
         SpecificAvroSerde<GameMovementKeyPressedRecord> gameMovementKeyPressedSerde = new SpecificAvroSerde<>();
         gameMovementKeyPressedSerde.configure(schemaRegistryProps, false);
+
         SpecificAvroSerde<GameAdministrationCommandRecord> gameAdministrationSerde = new SpecificAvroSerde<>();
         gameAdministrationSerde.configure(schemaRegistryProps, false);
-
 
         BranchedKStream<String, String> gameInputBranched = builder
                 .stream(GAME_INPUT_TOPIC, Consumed.with(Serdes.String(), Serdes.String()))
                 .map((k, v) -> new KeyValue<>("1", v))
                 .split();
-
 
         gameInputBranched.branch(isGameMovementKeyPressedEvent(),
                 Branched.withConsumer(stream -> stream.mapValues(value -> new GameMovementKeyPressedRecord(GameMovementKeyPressed.valueOf(value)))
@@ -43,11 +43,11 @@ public class GameInputRouter {
                         .to(ILLEGAL_ARGUMENTS_TOPIC, Produced.with(Serdes.String(), gameMovementKeyPressedSerde))));
 
         builder.stream(GAME_MOVEMENT_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameMovementKeyPressedSerde))
-                .mapValues(v -> "GameMovementKeyPressed: " + v + ", type: " + v.getType())
+                .mapValues(v -> "GameMovement: " + v)
                 .to(GAME_OUTPUT);
 
         builder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdministrationSerde))
-                .mapValues(v -> "GameAdmin: " + v + ", type: " + v.getType())
+                .mapValues(v -> "GameAdmin: " + v)
                 .to(GAME_OUTPUT);
     }
 
