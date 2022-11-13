@@ -6,7 +6,6 @@ import op.kompetensdag.snake.model.GameStatusRecord;
 import op.kompetensdag.snake.model.GameTick;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.processor.PunctuationType;
 import org.apache.kafka.streams.processor.ProcessorContext;
@@ -45,7 +44,7 @@ public class TickGenerator implements Transformer<String, GameStatusRecord, KeyV
                 }
             };
 
-    public static void define(KTable<String, GameStatusRecord> gameStatusKTable,Map<String, String> schemaRegistryProps){
+    public static void define(KTable<String, GameStatusRecord> gameStatusKTable, Map<String, String> schemaRegistryProps){
 
 
         // get a table view of game status

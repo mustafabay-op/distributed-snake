@@ -2,7 +2,7 @@ package op.kompetensdag.snake;
 
 import op.kompetensdag.snake.model.GameTableEntry;
 import op.kompetensdag.snake.model.GameTableEntryType;
-import op.kompetensdag.snake.model.GameTablePosition;
+import op.kompetensdag.snake.model.TablePosition;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +42,7 @@ public class GameWall {
     }
 
     private static GameTableEntry getWall(Position position) {
-        GameTablePosition wallPosition = GameTablePosition.newBuilder(new GameTablePosition()).setX(position.getX()).setY(position.getY()).build();
+        TablePosition wallPosition = TablePosition.newBuilder(new TablePosition()).setX(position.getX()).setY(position.getY()).build();
         return GameTableEntry.newBuilder(new GameTableEntry()).setBusy(true).setPosition(wallPosition).setType(GameTableEntryType.WALL).build();
     }
 }

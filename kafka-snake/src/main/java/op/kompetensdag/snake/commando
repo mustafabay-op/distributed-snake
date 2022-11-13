@@ -18,38 +18,19 @@ kafka-console-consumer --bootstrap-server localhost:9092 \
 # CREATE TOPICS
 # GO TO BROKER CLI
 kafka-topics --bootstrap-server localhost:9092 --topic game_input --create --partitions 3 --replication-factor 1 |
-kafka-topics --bootstrap-server localhost:9092 --topic game_commands --create --partitions 3 --replication-factor 1 |
 kafka-topics --bootstrap-server localhost:9092 --topic game_output --create --partitions 3 --replication-factor 1 |
 kafka-topics --bootstrap-server localhost:9092 --topic movement_commands --create --partitions 3 --replication-factor 1 |
 kafka-topics --bootstrap-server localhost:9092 --topic game_admin_commands --create --partitions 3 --replication-factor 1 |
 kafka-topics --bootstrap-server localhost:9092 --topic game_status --create --partitions 3 --replication-factor 1 |
 kafka-topics --bootstrap-server localhost:9092 --topic head_direction --create --partitions 3 --replication-factor 1 |
-kafka-topics --bootstrap-server localhost:9092 --topic play_test_topic --create --partitions 3 --replication-factor 1 |
-kafka-topics --bootstrap-server localhost:9092 --topic client_responses --create --partitions 3 --replication-factor 1 |
-kafka-topics --bootstrap-server localhost:9092 --topic game-table-entries --create --partitions 3 --replication-factor 1 |
-kafka-topics --bootstrap-server localhost:9092 --topic game_initializing --create --partitions 3 --replication-factor 1  |
+kafka-topics --bootstrap-server localhost:9092 --topic game_table_entries --create --partitions 3 --replication-factor 1 |
 kafka-topics --bootstrap-server localhost:9092 --topic game_ticks --create --partitions 3 --replication-factor 1  |
-
+kafka-topics --bootstrap-server localhost:9092 --topic Illegal_arguments_topic --create --partitions 3 --replication-factor 1  |
 kafka-topics --bootstrap-server localhost:9092 --topic head_direction_3 --create --partitions 3 --replication-factor 1
-
-kafka-topics --bootstrap-server localhost:9092 --topic head_direction_2 --create --partitions 3 --replication-factor 1
 
 
 
 
 # DELETE TOPICS
 # GO TO BROKER CLI
-kafka-topics --delete --topic game_input --bootstrap-server localhost:9092 |
-kafka-topics --delete --topic game_commands --bootstrap-server localhost:9092 |
-kafka-topics --delete --topic game_output --bootstrap-server localhost:9092 |
-kafka-topics --delete --topic movement_commands --bootstrap-server localhost:9092 |
-kafka-topics --delete --topic game_admin_commands --bootstrap-server localhost:9092 |
-kafka-topics --delete --topic game_status --bootstrap-server localhost:9092 |
-kafka-topics --delete --topic head_direction --bootstrap-server localhost:9092
-kafka-topics --delete --topic play_test_topic --bootstrap-server localhost:9092 |
-kafka-topics --delete --topic client_responses --bootstrap-server localhost:9092 |
-kafka-topics --delete --topic game-table-entries --bootstrap-server localhost:9092 |
-kafka-topics --delete --topic game_initializing --bootstrap-server localhost:9092
-
-
-
+kafka-topics --bootstrap-server localhost:9092 --list | while read topic_name ; do kafka-topics --bootstrap-server localhost:9092 --delete --topic $topic_name ; done
