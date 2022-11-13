@@ -28,7 +28,7 @@ public class Screen extends Application {
     public static final int WIDTH = 26;
     public static final String GAME_INPUT = "game-input";
     public static final String GAME_OUTPUT = "game-output";
-    private final Queue<Dot> queue = new LinkedList<>();
+    private static final Queue<Dot> queue = new LinkedList<>();
     private final Rectangle[][] rectangles = new Rectangle[HEIGHT][WIDTH];
 
     private GridPane pane;
@@ -38,15 +38,19 @@ public class Screen extends Application {
     private RectangleUpdater rectangleUpdater;
     private Stage stage;
 
-    @Override
-    public void start(Stage stage) {
+    public static void main(String[] args) {
         setupConsumer();
-        this.stage = stage;
-        controller = setupController();
-        showMainMenu();
+        launch();
     }
 
-    private void showMainMenu() {
+    @Override
+    public void start(Stage stage) {
+        this.stage = stage;
+        controller = setupController();
+        showMainMenuScene();
+    }
+
+    private void showMainMenuScene() {
         Pane pane = new Pane();
         Button button = new Button("START GAME");
         button.setOnAction(e -> showFreshPlayScene());
@@ -72,7 +76,7 @@ public class Screen extends Application {
         rectangleUpdater.start();
     }
 
-    private void setupConsumer() {
+    private static void setupConsumer() {
         Properties streamProps = new Properties();
         streamProps.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-snake");
         streamProps.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
@@ -140,9 +144,5 @@ public class Screen extends Application {
             }
         }
         return pane;
-    }
-
-    public static void main(String[] args) {
-        launch();
     }
 }
