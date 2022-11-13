@@ -14,10 +14,6 @@ public class Topics {
     public static final String CLIENT_RESPONSES_TOPIC = "client_responses";
 
     public static final String GAME_TABLE_ENTRIES = "game-table-entries";
-
-    static final String GAME_INITIALIZING_TOPIC = "game_initializing";
-
     public static final String ILLEGAL_ARGUMENTS_TOPIC = "Illegal_arguments_topic";
-
     public static final String GAME_TICKS = "game_ticks";
 }
