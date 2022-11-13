@@ -1,5 +1,6 @@
 package op.kompetensdag.snake;
 
+import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import op.kompetensdag.snake.model.GameStatusRecord;
@@ -37,6 +38,7 @@ public class SnakeApplication {
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+        props.put(AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, true);
         props.put("schema.registry.url", "http://localhost:8081");
 
         Map<String, String> schemaRegistryProps = Collections.singletonMap(
@@ -50,14 +52,14 @@ public class SnakeApplication {
         SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
         headDirSerde.configure(schemaRegistryProps, false);
 
-        KTable<String, GameStatusRecord> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde), Materialized.with(Serdes.String(), gameStatusSerde));
         KTable<String, HeadDirectionRecord> headDirectionRecordKTable3 = builder.table(Topics.HEAD_DIRECTION_TOPIC_3, Consumed.with(Serdes.String(), headDirSerde));
 
         GameInputRouter.define(builder, schemaRegistryProps);
-        TickGenerator.define(gameStatusKTable,schemaRegistryProps);
+        KTable<String, GameStatusRecord> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde));
         AdministrationProcessor.define(builder, schemaRegistryProps, gameStatusKTable, headDirectionRecordKTable3);
         MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable, headDirectionRecordKTable3);
         TickProcessor.define(builder, schemaRegistryProps);
+        TickGenerator.define(gameStatusKTable,schemaRegistryProps);
 
 
         final Topology topology = builder.build();
