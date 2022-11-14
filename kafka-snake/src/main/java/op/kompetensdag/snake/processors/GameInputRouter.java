@@ -1,4 +1,4 @@
-package op.kompetensdag.snake;
+package op.kompetensdag.snake.processors;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import op.kompetensdag.snake.model.GameAdministrationCommand;
@@ -27,7 +27,6 @@ public class GameInputRouter {
 
         BranchedKStream<String, String> gameInputBranched = builder
                 .stream(GAME_INPUT_TOPIC, Consumed.with(Serdes.String(), Serdes.String()))
-                .map((k, v) -> new KeyValue<>("1", v))
                 .split();
 
         gameInputBranched.branch(isGameMovementKeyPressedEvent(),
@@ -42,13 +41,13 @@ public class GameInputRouter {
                 Branched.withConsumer(stream -> stream.mapValues(v -> new GameMovementKeyPressedRecord(GameMovementKeyPressed.LEFT))
                         .to(ILLEGAL_ARGUMENTS_TOPIC, Produced.with(Serdes.String(), gameMovementKeyPressedSerde))));
 
-        builder.stream(GAME_MOVEMENT_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameMovementKeyPressedSerde))
+/*        builder.stream(GAME_MOVEMENT_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameMovementKeyPressedSerde))
                 .mapValues(v -> "GameMovement: " + v)
                 .to(GAME_OUTPUT);
 
         builder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdministrationSerde))
                 .mapValues(v -> "GameAdmin: " + v)
-                .to(GAME_OUTPUT);
+                .to(GAME_OUTPUT);*/
     }
 
     private static Predicate<String, String> isGameMovementKeyPressedEvent() {

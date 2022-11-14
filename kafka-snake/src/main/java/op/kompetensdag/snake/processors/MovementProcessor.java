@@ -26,8 +26,10 @@ public class MovementProcessor {
         SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
         headDirSerde.configure(schemaRegistryProps, false);
 
+/*
 
         headDirectionRecordKTable3.mapValues(v -> "HeadDir: " + v).toStream().to(GAME_OUTPUT);
+*/
 
         builder
                 .stream(GAME_MOVEMENT_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameMovementKeyPressedSerde))
