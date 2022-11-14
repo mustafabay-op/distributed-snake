@@ -73,7 +73,7 @@ public class AdministrationProcessor {
                 .mapValues(value -> new HeadDirectionRecord(HeadDirection.NORTH))
                 .to(HEAD_DIRECTION_TOPIC_3, Produced.with(Serdes.String(), headDirSerde));
 
-        gameStatusKTable
+/*        gameStatusKTable
                 .toStream()
                 .mapValues(v -> "GameStatus: " + v)
                 .to(GAME_OUTPUT);
@@ -84,6 +84,6 @@ public class AdministrationProcessor {
 
         builder.stream(GAME_TABLE_ENTRIES, Consumed.with(Serdes.String(), gameTableEntrySerde))
                 .mapValues(v -> "GameTableEntries: " + v)
-                .to(GAME_OUTPUT);
+                .to(GAME_OUTPUT);*/
     }
 }

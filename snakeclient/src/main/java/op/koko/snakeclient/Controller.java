@@ -1,34 +1,26 @@
 package op.koko.snakeclient;
 
-import op.koko.snakeclient.model.Color;
+import javafx.scene.input.KeyCode;
+
+import java.util.UUID;
 
 public class Controller {
-    private final GameOutputProducer gameOutputProducer;
+    private final GameEventProducer gameEventProducer;
 
-    private String gameId;
+    public static String gameId;
 
-    public Controller(final GameOutputProducer gameOutputProducer) {
-        this.gameOutputProducer = gameOutputProducer;
+    public Controller(final GameEventProducer gameEventProducer) {
+        this.gameEventProducer = gameEventProducer;
     }
 
-    public void up() {
-            gameOutputProducer.produce(Color.GREEN, gameId);
+    public void sendMovementKeyPressedEvent(KeyCode keyCode) {
+        gameEventProducer.produce(gameId, keyCode);
     }
 
-    public void down() {
-            gameOutputProducer.produce(Color.BLACK, gameId);
-    }
-
-    public void left() {
-            gameOutputProducer.produce(Color.WHITE, gameId);
-    }
-
-    public void right() {
-            gameOutputProducer.produce(Color.GREEN, gameId);
-    }
-
-    public void space() {
-            gameOutputProducer.produce(Color.WHITE, gameId);
+    public void sendAdministrationKeyEvent(KeyCode keyCode) {
+        if (gameId == null)
+            setGameId(UUID.randomUUID().toString());
+        gameEventProducer.produce(gameId, keyCode);
     }
 
     public void setGameId(String gameId) {

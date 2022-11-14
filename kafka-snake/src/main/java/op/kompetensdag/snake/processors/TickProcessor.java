@@ -69,7 +69,8 @@ public class TickProcessor {
                 .newPositionEntry(newPositionEntry);
     }
 
-    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps,KTable<String, HeadDirectionRecord> headDirectionRecordKTable3){
+    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps,KTable<String, HeadDirectionRecord> headDirectionRecordKTable3,
+                              KStream<String, GameTableEntry> tableEntryLog){
 
         SpecificAvroSerde<GameTablePosition> gameTablePositionSerde = new SpecificAvroSerde<>();
         gameTablePositionSerde.configure(schemaRegistryProps, true);
@@ -95,21 +96,17 @@ public class TickProcessor {
         SpecificAvroSerde<ProcessTickCommand> processTickCommandSerde = new SpecificAvroSerde<>();
         processTickCommandSerde.configure(schemaRegistryProps, false);
 
-        KStream<String,GameTableEntry> tableEntryLog =
-                builder
-                        .stream(GAME_TABLE_ENTRIES, Consumed.with(Serdes.String(), gameTableEntrySerde));
-
         KTable<String,GameTableEntry> snakeHead =
                 tableEntryLog
                         .filter( (game,tableEntry) -> tableEntry.getType() == GameTableEntryType.SNAKE && tableEntry.getBusy() == true )
                         .groupByKey()
                         .reduce( (current,next) -> next, Named.as("snake-head"),Materialized.with(Serdes.String(),gameTableEntrySerde));
 
-        snakeHead
+        /*snakeHead
                 .toStream()
                 .mapValues(v -> "Snake head: " + v)
                 .to(GAME_OUTPUT);
-
+*/
         KTable<String,GameTableEntry> snakeTail =
                 tableEntryLog
                         .filter((game,tableEntry) -> tableEntry.getType() == GameTableEntryType.SNAKE)
@@ -132,10 +129,10 @@ public class TickProcessor {
                         .filter( (game,entries) -> !entries.getEntries().isEmpty())
                         .mapValues( v -> v.getEntries().get(0));
 
-        snakeTail
+/*        snakeTail
                 .toStream()
                 .mapValues(v -> "Snake tail: " + v)
-                .to(GAME_OUTPUT);
+                .to(GAME_OUTPUT);*/
 
         KTable<GameTablePosition,GameTableEntry> positionUsage  =
                 tableEntryLog

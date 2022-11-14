@@ -1,22 +1,19 @@
 package op.kompetensdag.snake;
 
-import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import op.kompetensdag.snake.model.GameStatusRecord;
+import op.kompetensdag.snake.model.GameTableEntry;
 import op.kompetensdag.snake.model.HeadDirectionRecord;
-import op.kompetensdag.snake.processors.TickGenerator;
-import op.kompetensdag.snake.processors.AdministrationProcessor;
-import op.kompetensdag.snake.processors.MovementProcessor;
-import op.kompetensdag.snake.processors.TickProcessor;
+import op.kompetensdag.snake.processors.*;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.Materialized;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -26,6 +23,7 @@ import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
 import static op.kompetensdag.snake.Topics.GAME_STATUS_TOPIC;
+import static op.kompetensdag.snake.Topics.GAME_TABLE_ENTRIES;
 
 @SpringBootApplication
 public class SnakeApplication {
@@ -52,14 +50,19 @@ public class SnakeApplication {
         SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
         headDirSerde.configure(schemaRegistryProps, false);
 
+        SpecificAvroSerde<GameTableEntry> gameTableEntrySerde = new SpecificAvroSerde<>();
+        gameTableEntrySerde.configure(schemaRegistryProps, false);
+
         KTable<String, HeadDirectionRecord> headDirectionRecordKTable3 = builder.table(Topics.HEAD_DIRECTION_TOPIC_3, Consumed.with(Serdes.String(), headDirSerde));
+        KStream<String, GameTableEntry> tableEntryLog = builder.stream(GAME_TABLE_ENTRIES, Consumed.with(Serdes.String(), gameTableEntrySerde));
 
         GameInputRouter.define(builder, schemaRegistryProps);
         KTable<String, GameStatusRecord> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde));
         AdministrationProcessor.define(builder, schemaRegistryProps, gameStatusKTable, headDirectionRecordKTable3);
         MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable, headDirectionRecordKTable3);
-        TickGenerator.define(gameStatusKTable,schemaRegistryProps);
-        TickProcessor.define(builder, schemaRegistryProps,headDirectionRecordKTable3);
+        TickGenerator.define(gameStatusKTable, schemaRegistryProps);
+        TickProcessor.define(builder, schemaRegistryProps, headDirectionRecordKTable3, tableEntryLog);
+        GameUpdatesProcessor.define(tableEntryLog);
 
 
         final Topology topology = builder.build();
