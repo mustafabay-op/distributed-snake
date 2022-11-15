@@ -13,10 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 @Builder
 public class TickProcessor {
 
+    public static final String SNAKE_HEAD_REDUCER_NAME = "snake-head";
     private GameTick gameTick;
     private HeadDirection headDirection;
     private GameTableEntry snakeHead;
@@ -57,53 +59,27 @@ public class TickProcessor {
         gameStatusSerde.configure(schemaRegistryProps, false);
         processTickCommandSerde.configure(schemaRegistryProps, false);
 
-        KTable<String, GameTableEntry> snakeHead =
-                tableEntryLog
-                        .filter((game, tableEntry) -> tableEntry.getType() == GameTableEntryType.SNAKE && tableEntry.getBusy())
-                        .groupByKey()
-                        .reduce((current, next) -> next, Named.as("snake-head"), Materialized.with(Serdes.String(), gameTableEntrySerde));
+        KTable<String, GameTableEntry> snakeHead = tableEntryLog
+                .filter((game, tableEntry) -> isSnake(tableEntry) && tableEntry.getBusy())
+                .groupByKey()
+                .reduce((current, next) -> next, Named.as(SNAKE_HEAD_REDUCER_NAME), Materialized.with(Serdes.String(), gameTableEntrySerde));
 
-        /*snakeHead
-                .toStream()
-                .mapValues(v -> "Snake head: " + v)
-                .to(GAME_OUTPUT);
-*/
-        KTable<String, GameTableEntry> snakeTail =
-                tableEntryLog
-                        .filter((game, tableEntry) -> tableEntry.getType() == GameTableEntryType.SNAKE)
-                        .groupByKey()
-                        .aggregate(() -> GameSnakeEntries.newBuilder().setEntries(new ArrayList<>()).build(), (game, newEntry, entries) -> {
-                            List<GameTableEntry> list = entries.getEntries();
-                            if (newEntry.getBusy()) {
-                                list.add(newEntry);
-                            } else {
-                                // if(!entries.getEntries().isEmpty()) // it should never be empty if it is not busy snake element
-                                /*if(list.stream().anyMatch( listEntry -> listEntry.getPosition().equals(newEntry.getPosition()))) {
-                                list = list.stream().
-                                        dropWhile( listEntry -> listEntry.getPosition().equals(newEntry.getPosition()))
-                                        .collect(Collectors.toList());*/
-                                list.remove(0);
-                            }
-                            entries.setEntries(list);
-                            return entries;
-                        }, Materialized.with(Serdes.String(), gameTableEntriesSerde))
-                        .filter((game, entries) -> !entries.getEntries().isEmpty())
-                        .mapValues(v -> v.getEntries().get(0));
+        /*snakeHead.toStream().mapValues(v -> "Snake head: " + v).to(GAME_OUTPUT);*/
+        /*        snakeTail.toStream().mapValues(v -> "Snake tail: " + v).to(GAME_OUTPUT);*/
 
-/*        snakeTail
-                .toStream()
-                .mapValues(v -> "Snake tail: " + v)
-                .to(GAME_OUTPUT);*/
+        KTable<String, GameTableEntry> snakeTail = tableEntryLog
+                .filter((game, tableEntry) -> isSnake(tableEntry))
+                .groupByKey()
+                .aggregate(
+                        TickProcessor::getInitialGameSnakeEntries,
+                        (game, newEntry, entries) -> getGameSnakeEntries(newEntry, entries),
+                        Materialized.with(Serdes.String(), gameTableEntriesSerde))
+                .filter((game, entries) -> !entries.getEntries().isEmpty())
+                .mapValues(v -> v.getEntries().get(0));
 
-        KTable<GameTablePosition, GameTableEntry> positionUsage =
-                tableEntryLog
-                        .groupBy((gameId, entry) -> new GameTablePosition(entry.getPosition(), gameId),
-                                Grouped.with(gameTablePositionSerde, gameTableEntrySerde))
-                        .reduce((currentValue, next) -> next);
-
-
-        /* KStream<String, GameStatus> gameStatusKStream =
-                builder.stream("game-status",Consumed.with(Serdes.String(),gameStatusSerde));*/
+        KTable<GameTablePosition, GameTableEntry> positionUsage = tableEntryLog
+                .groupBy((gameId, entry) -> new GameTablePosition(entry.getPosition(), gameId), Grouped.with(gameTablePositionSerde, gameTableEntrySerde))
+                .reduce((currentValue, next) -> next);
 
         // join current game status? - will game status change ensure that ticking is stopped?
         // join current snake direction
@@ -114,33 +90,57 @@ public class TickProcessor {
         // check if new snake head position is clashing with current state of the position in table
         // emit a position busy event for head and position empty event for tail
 
-
         builder.stream(Topics.GAME_TICKS, Consumed.with(Serdes.String(), tickSerde))
                 .mapValues((game, tick) -> TickProcessor.builder().gameId(game).gameTick(tick))
                 .join(headDirectionRecordKTable3, (cmdBuilder, direction) -> cmdBuilder.headDirection(direction.getType()))
-                .join(snakeHead, (cmdBuilder, head) -> cmdBuilder.snakeHead(head))
-                .join(snakeTail, (cmdBuilder, tail) -> cmdBuilder.snakeTail(tail))
+                .join(snakeHead, TickProcessorBuilder::snakeHead)
+                .join(snakeTail, TickProcessorBuilder::snakeTail)
                 .selectKey((gameId, cmdBuilder) -> new GameTablePosition(cmdBuilder.build().getNewHeadPosition(), gameId))
                 // change value to persistent avro entity
                 .mapValues((tablePosition, cmdBuilder) -> cmdBuilder.build().toSerializableObject())
 //                .groupByKey(Grouped.keySerde(gameTablePositionSerde))
-                .leftJoin(positionUsage,
-                        (readOnlyKey, processTickCommand, gameTableEntry) -> fromProcessTickCommand(processTickCommand, gameTableEntry),
+                .leftJoin(positionUsage, (readOnlyKey, processTickCommand, gameTableEntry) -> fromProcessTickCommand(processTickCommand, gameTableEntry),
                         Joined.with(gameTablePositionSerde, processTickCommandSerde, gameTableEntrySerde))
                 .selectKey((k, v) -> v.build().getGameId())
                 .split()
-                .branch((game, cmdBuilder) -> cmdBuilder.build().isNewHeadPositionTaken(),
-                        Branched.withConsumer((builderKStream) ->
-                                builderKStream
-                                        .mapValues((v) -> new GameStatusRecord(GameStatus.ENDED))
-                                        .to(Topics.GAME_STATUS, Produced.with(Serdes.String(), gameStatusSerde))))
-                .defaultBranch(
-                        Branched.withConsumer((builderKStream) ->
-                                builderKStream
-                                        .flatMapValues(cmdBuilder -> cmdBuilder.build().moveSnake())
-                                        .to(Topics.GAME_TABLE_ENTRIES, Produced.with(Serdes.String(), gameTableEntrySerde))
-                        ));
+                .branch((game, cmdBuilder) -> cmdBuilder.build().isNewHeadPositionTaken(), Branched.withConsumer(getGameOverConsumer(gameStatusSerde)))
+                .defaultBranch(Branched.withConsumer(getMoveSnakeConsumer(gameTableEntrySerde)));
+    }
 
+    private static Consumer<KStream<String, TickProcessorBuilder>> getMoveSnakeConsumer(SpecificAvroSerde<GameTableEntry> gameTableEntrySerde) {
+        return builderKStream -> builderKStream
+                .flatMapValues(cmdBuilder -> cmdBuilder.build().moveSnake())
+                .to(Topics.GAME_TABLE_ENTRIES, Produced.with(Serdes.String(), gameTableEntrySerde));
+    }
+
+    private static Consumer<KStream<String, TickProcessorBuilder>> getGameOverConsumer(SpecificAvroSerde<GameStatusRecord> gameStatusSerde) {
+        return (builderKStream) -> builderKStream
+                .mapValues((v) -> new GameStatusRecord(GameStatus.ENDED))
+                .to(Topics.GAME_STATUS, Produced.with(Serdes.String(), gameStatusSerde));
+    }
+
+    private static GameSnakeEntries getInitialGameSnakeEntries() {
+        return GameSnakeEntries.newBuilder().setEntries(new ArrayList<>()).build();
+    }
+
+    private static GameSnakeEntries getGameSnakeEntries(GameTableEntry newEntry, GameSnakeEntries entries) {
+        List<GameTableEntry> list = entries.getEntries();
+        if (newEntry.getBusy()) {
+            list.add(newEntry);
+        } else {
+            // if(!entries.getEntries().isEmpty()) // it should never be empty if it is not busy snake element
+            /*if(list.stream().anyMatch( listEntry -> listEntry.getPosition().equals(newEntry.getPosition()))) {
+            list = list.stream().
+                    dropWhile( listEntry -> listEntry.getPosition().equals(newEntry.getPosition()))
+                    .collect(Collectors.toList());*/
+            list.remove(0);
+        }
+        entries.setEntries(list);
+        return entries;
+    }
+
+    private static boolean isSnake(GameTableEntry tableEntry) {
+        return tableEntry.getType() == GameTableEntryType.SNAKE;
     }
 
     public TablePosition getNewHeadPosition() {
@@ -154,14 +154,11 @@ public class TickProcessor {
     }
 
     public boolean isNewHeadPositionTaken() {
-        return Optional.ofNullable(newPositionEntry).map(entry -> entry.getBusy()).orElse(false);
+        return Optional.ofNullable(newPositionEntry).map(GameTableEntry::getBusy).orElse(false);
     }
 
     public Iterable<GameTableEntry> moveSnake() {
-        // 1. add new snake head
         GameTableEntry addHead = GameTableEntry.newBuilder(snakeHead).setPosition(getNewHeadPosition()).build();
-
-        // 2. invalidate snake tail
         GameTableEntry removeTail = GameTableEntry.newBuilder(snakeTail).setBusy(false).build();
         return List.of(addHead, removeTail);
     }

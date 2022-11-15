@@ -12,6 +12,7 @@ import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.kstream.TransformerSupplier;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.PunctuationType;
+import org.apache.kafka.streams.processor.Punctuator;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
@@ -57,9 +58,9 @@ public class TickGenerator implements Transformer<String, GameStatusRecord, KeyV
         // processor stop punctuation
         // on punctuate processor will produce tick event
         SpecificAvroSerde<GameStatusRecord> gameStatusSerde = new SpecificAvroSerde<>();
-        gameStatusSerde.configure(schemaRegistryProps, false);
-
         SpecificAvroSerde<GameTick> tickSerde = new SpecificAvroSerde<>();
+
+        gameStatusSerde.configure(schemaRegistryProps, false);
         tickSerde.configure(schemaRegistryProps, false);
 
         gameStatusKTable
@@ -74,21 +75,23 @@ public class TickGenerator implements Transformer<String, GameStatusRecord, KeyV
     public void init(ProcessorContext context) {
         this.context = context;
         this.gameRunningStatus = context.getStateStore(STATE_STORE_NAME);
-        this.context.
-                schedule(Duration.ofMillis(500), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
-                    gameRunningStatus.all().forEachRemaining(status -> {
-                        boolean isGameRunning = status.value == 1;
-                        if (isGameRunning) {
-                            context.forward(status.key, new GameTick(Instant.ofEpochMilli(timestamp)));
-                        }
-                    });
-                });
+        this.context.schedule(Duration.ofMillis(500), PunctuationType.WALL_CLOCK_TIME, getPunctuator(context));
+    }
+
+    private Punctuator getPunctuator(ProcessorContext context) {
+        return timestamp -> gameRunningStatus.all().forEachRemaining(gameStatus -> forwardIfRunning(context, timestamp, gameStatus));
+    }
+
+    private void forwardIfRunning(ProcessorContext context, long timestamp, KeyValue<String, Short> gameStatus) {
+        if (gameStatus.value == 1) {
+            context.forward(gameStatus.key, new GameTick(Instant.ofEpochMilli(timestamp)));
+        }
     }
 
     @Override
     public KeyValue<String, GameTick> transform(String key, GameStatusRecord value) {
         switch (value.getType()) {
-            case STARTED, RUNNING -> gameRunningStatus.putIfAbsent(key, (short) 1);
+            case STARTED, RUNNING, INITIALIZING -> gameRunningStatus.putIfAbsent(key, (short) 1);
             case PAUSED, ENDED -> gameRunningStatus.putIfAbsent(key, (short) 0);
         }
         return null;
