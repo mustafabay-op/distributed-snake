@@ -22,9 +22,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
-import static op.kompetensdag.snake.Topics.GAME_STATUS_TOPIC;
-import static op.kompetensdag.snake.Topics.GAME_TABLE_ENTRIES;
-
 @SpringBootApplication
 public class SnakeApplication {
 
@@ -57,12 +54,12 @@ public class SnakeApplication {
 
         // Build
         final StreamsBuilder builder = new StreamsBuilder();
-        KTable<String, HeadDirectionRecord> currentHeadDirectionTable = builder.table(Topics.HEAD_DIRECTION_TOPIC_3, Consumed.with(Serdes.String(), headDirSerde));
-        KStream<String, GameTableEntry> tableEntryLog = builder.stream(GAME_TABLE_ENTRIES, Consumed.with(Serdes.String(), gameTableEntrySerde));
+        KTable<String, HeadDirectionRecord> currentHeadDirectionTable = builder.table(Topics.HEAD_DIRECTION, Consumed.with(Serdes.String(), headDirSerde));
+        KStream<String, GameTableEntry> tableEntryLog = builder.stream(Topics.GAME_TABLE_ENTRIES, Consumed.with(Serdes.String(), gameTableEntrySerde));
+        KTable<String, GameStatusRecord> gameStatusKTable = builder.table(Topics.GAME_STATUS, Consumed.with(Serdes.String(), gameStatusSerde));
 
         // Define processors
         GameInputRouter.define(builder, schemaRegistryProps);
-        KTable<String, GameStatusRecord> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde));
         AdministrationProcessor.define(builder, schemaRegistryProps, gameStatusKTable);
         MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable, currentHeadDirectionTable);
         TickGenerator.define(gameStatusKTable, schemaRegistryProps);

@@ -1,13 +1,12 @@
 package op.kompetensdag.snake.processors;
 
 import op.kompetensdag.snake.Color;
+import op.kompetensdag.snake.Topics;
 import op.kompetensdag.snake.model.GameTableEntry;
 import op.kompetensdag.snake.model.GameTableEntryType;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Produced;
-
-import static op.kompetensdag.snake.Topics.GAME_OUTPUT;
 
 public class GameUpdatesProcessor {
 
@@ -16,7 +15,7 @@ public class GameUpdatesProcessor {
     public static void define(final KStream<String, GameTableEntry> tableEntryLog) {
         tableEntryLog
                 .mapValues(GameUpdatesProcessor::getOutputString)
-                .to(GAME_OUTPUT, Produced.with(Serdes.String(), Serdes.String()));
+                .to(Topics.GAME_OUTPUT, Produced.with(Serdes.String(), Serdes.String()));
     }
 
     private static String getOutputString(GameTableEntry entry) {
