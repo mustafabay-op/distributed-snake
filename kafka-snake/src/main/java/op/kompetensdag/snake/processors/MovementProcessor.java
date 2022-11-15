@@ -12,7 +12,6 @@ import org.apache.kafka.streams.kstream.Produced;
 
 import java.util.Map;
 
-import static op.kompetensdag.snake.Topics.GAME_MOVEMENT_COMMANDS_TOPIC;
 import static op.kompetensdag.snake.model.HeadDirection.*;
 
 @Builder
@@ -32,14 +31,14 @@ public class MovementProcessor {
         headDirSerde.configure(schemaRegistryProps, false);
 
         builder
-                .stream(GAME_MOVEMENT_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameMovementKeyPressedSerde))
+                .stream(Topics.GAME_MOVEMENT_COMMANDS, Consumed.with(Serdes.String(), gameMovementKeyPressedSerde))
                 .mapValues((game, movement) -> MovementProcessor.builder().intendedHeadDirection(getIntendedHeadDirection(movement.getType())))
                 .join(gameStatusKTable, MovementProcessorBuilder::gameStatus)
                 .filter((k, cmdBuilder) -> cmdBuilder.gameStatus.equals(new GameStatusRecord(GameStatus.RUNNING)))
                 .join(currentHeadDirectionTable, MovementProcessorBuilder::currentHeadDirection)
                 .filter((k, cmdBuilder) -> cmdBuilder.build().isIntendedMoveValid())
                 .mapValues(cmdBuilder -> new HeadDirectionRecord(cmdBuilder.build().intendedHeadDirection.getType()))
-                .to(Topics.HEAD_DIRECTION_TOPIC_3, Produced.with(Serdes.String(), headDirSerde));
+                .to(Topics.HEAD_DIRECTION, Produced.with(Serdes.String(), headDirSerde));
 
         /*currentHeadDirectionTable.mapValues(v -> "HeadDir: " + v).toStream().to(GAME_OUTPUT);*/
     }

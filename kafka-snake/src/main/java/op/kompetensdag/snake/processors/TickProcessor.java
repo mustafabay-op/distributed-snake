@@ -14,8 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static op.kompetensdag.snake.Topics.GAME_TABLE_ENTRIES;
-
 @Builder
 public class TickProcessor {
 
@@ -135,12 +133,12 @@ public class TickProcessor {
                         Branched.withConsumer((builderKStream) ->
                                 builderKStream
                                         .mapValues((v) -> new GameStatusRecord(GameStatus.ENDED))
-                                        .to(Topics.GAME_STATUS_TOPIC, Produced.with(Serdes.String(), gameStatusSerde))))
+                                        .to(Topics.GAME_STATUS, Produced.with(Serdes.String(), gameStatusSerde))))
                 .defaultBranch(
                         Branched.withConsumer((builderKStream) ->
                                 builderKStream
                                         .flatMapValues(cmdBuilder -> cmdBuilder.build().moveSnake())
-                                        .to(GAME_TABLE_ENTRIES, Produced.with(Serdes.String(), gameTableEntrySerde))
+                                        .to(Topics.GAME_TABLE_ENTRIES, Produced.with(Serdes.String(), gameTableEntrySerde))
                         ));
 
     }

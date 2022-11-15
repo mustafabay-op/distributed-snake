@@ -14,9 +14,6 @@ import org.apache.kafka.streams.kstream.Produced;
 import java.util.Map;
 import java.util.Optional;
 
-import static op.kompetensdag.snake.Topics.GAME_ADMINISTRATION_COMMANDS_TOPIC;
-import static op.kompetensdag.snake.Topics.HEAD_DIRECTION_TOPIC_3;
-
 public class AdministrationProcessor {
 
     public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps, KTable<String, GameStatusRecord> gameStatusKTable) {
@@ -31,7 +28,7 @@ public class AdministrationProcessor {
         gameTableEntrySerde.configure(schemaRegistryProps, false);
         headDirSerde.configure(schemaRegistryProps, false);
 
-        builder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdminSerde))
+        builder.stream(Topics.GAME_ADMINISTRATION_COMMANDS, Consumed.with(Serdes.String(), gameAdminSerde))
                 .mapValues((gameId, gameAdminCommand) -> ProcessAdminCommand.builder().gameId(gameId).gameAdministrationCommand(gameAdminCommand.getType()))
                 .leftJoin(gameStatusKTable, (cmdBuilder, gameStatus) -> cmdBuilder.gameStatus(Optional.ofNullable(gameStatus).map(GameStatusRecord::getType).orElse(null)))
                 .split()
@@ -39,26 +36,26 @@ public class AdministrationProcessor {
                         Branched.withConsumer(cmdBuilder ->
                                 cmdBuilder
                                         .mapValues(value -> new GameStatusRecord(GameStatus.INITIALIZING))
-                                        .to(Topics.GAME_STATUS_TOPIC, Produced.with(Serdes.String(), gameStatusSerde))))
+                                        .to(Topics.GAME_STATUS, Produced.with(Serdes.String(), gameStatusSerde))))
                 .branch((gameId, cmdBuilder) -> cmdBuilder.build().shouldPauseGame(),
                         Branched.withConsumer(cmdBuilder ->
                                 cmdBuilder
                                         .mapValues(value -> new GameStatusRecord(GameStatus.PAUSED))
-                                        .to(Topics.GAME_STATUS_TOPIC, Produced.with(Serdes.String(), gameStatusSerde))))
+                                        .to(Topics.GAME_STATUS, Produced.with(Serdes.String(), gameStatusSerde))))
                 .branch((gameId, cmdBuilder) -> cmdBuilder.build().shouldResumeGame(),
                         Branched.withConsumer(cmdBuilder ->
                                 cmdBuilder.mapValues(value -> new GameStatusRecord(GameStatus.RUNNING))
-                                        .to(Topics.GAME_STATUS_TOPIC, Produced.with(Serdes.String(), gameStatusSerde))))
+                                        .to(Topics.GAME_STATUS, Produced.with(Serdes.String(), gameStatusSerde))))
                 .defaultBranch(
                         Branched.withConsumer(cmdBuilder ->
                                 cmdBuilder.mapValues(value -> "Illegal game administration argument: cmdBuilder=" + value + " build: " + value.build() + " GameAdminCommand: " + value.build().getGameAdministrationCommand())
-                                        .to(Topics.ILLEGAL_ARGUMENTS_TOPIC, Produced.with(Serdes.String(), Serdes.String()))));
+                                        .to(Topics.ILLEGAL_ARGUMENTS, Produced.with(Serdes.String(), Serdes.String()))));
 
         gameStatusKTable
                 .toStream()
                 .filter((key, value) -> value.getType().equals(GameStatus.INITIALIZING))
                 .mapValues(value -> new GameStatusRecord(GameStatus.RUNNING))
-                .to(Topics.GAME_STATUS_TOPIC, Produced.with(Serdes.String(), gameStatusSerde));
+                .to(Topics.GAME_STATUS, Produced.with(Serdes.String(), gameStatusSerde));
 
         gameStatusKTable
                 .toStream()
@@ -70,7 +67,7 @@ public class AdministrationProcessor {
                 .toStream()
                 .filter((key, value) -> value.getType().equals(GameStatus.INITIALIZING))
                 .mapValues(value -> new HeadDirectionRecord(HeadDirection.NORTH))
-                .to(HEAD_DIRECTION_TOPIC_3, Produced.with(Serdes.String(), headDirSerde));
+                .to(Topics.HEAD_DIRECTION, Produced.with(Serdes.String(), headDirSerde));
 
 /*        gameStatusKTable
                 .toStream()
