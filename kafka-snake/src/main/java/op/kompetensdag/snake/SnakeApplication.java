@@ -31,6 +31,7 @@ public class SnakeApplication {
     public static void main(String[] args) {
         SpringApplication.run(SnakeApplication.class, args);
 
+        // Configuration properties
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-snake");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
@@ -44,26 +45,28 @@ public class SnakeApplication {
         Map<String, String> schemaRegistryProps = Collections.singletonMap(
                 AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, props.getProperty("schema.registry.url"));
 
-        final StreamsBuilder builder = new StreamsBuilder();
 
+        // Serializing/Deserializing
         SpecificAvroSerde<GameStatusRecord> gameStatusSerde = new SpecificAvroSerde<>();
-        gameStatusSerde.configure(schemaRegistryProps, false);
-
         SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
-        headDirSerde.configure(schemaRegistryProps, false);
-
         SpecificAvroSerde<GameTableEntry> gameTableEntrySerde = new SpecificAvroSerde<>();
+
+        gameStatusSerde.configure(schemaRegistryProps, false);
+        headDirSerde.configure(schemaRegistryProps, false);
         gameTableEntrySerde.configure(schemaRegistryProps, false);
 
-        KTable<String, HeadDirectionRecord> headDirectionRecordKTable3 = builder.table(Topics.HEAD_DIRECTION_TOPIC_3, Consumed.with(Serdes.String(), headDirSerde));
+        // Build
+        final StreamsBuilder builder = new StreamsBuilder();
+        KTable<String, HeadDirectionRecord> currentHeadDirectionTable = builder.table(Topics.HEAD_DIRECTION_TOPIC_3, Consumed.with(Serdes.String(), headDirSerde));
         KStream<String, GameTableEntry> tableEntryLog = builder.stream(GAME_TABLE_ENTRIES, Consumed.with(Serdes.String(), gameTableEntrySerde));
 
+        // Define processors
         GameInputRouter.define(builder, schemaRegistryProps);
         KTable<String, GameStatusRecord> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde));
-        AdministrationProcessor.define(builder, schemaRegistryProps, gameStatusKTable, headDirectionRecordKTable3);
-        MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable, headDirectionRecordKTable3);
+        AdministrationProcessor.define(builder, schemaRegistryProps, gameStatusKTable);
+        MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable, currentHeadDirectionTable);
         TickGenerator.define(gameStatusKTable, schemaRegistryProps);
-        TickProcessor.define(builder, schemaRegistryProps, headDirectionRecordKTable3, tableEntryLog);
+        TickProcessor.define(builder, schemaRegistryProps, currentHeadDirectionTable, tableEntryLog);
         GameUpdatesProcessor.define(tableEntryLog);
 
 

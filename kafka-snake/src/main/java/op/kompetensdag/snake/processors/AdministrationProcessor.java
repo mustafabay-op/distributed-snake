@@ -14,27 +14,26 @@ import org.apache.kafka.streams.kstream.Produced;
 import java.util.Map;
 import java.util.Optional;
 
-import static op.kompetensdag.snake.Topics.*;
+import static op.kompetensdag.snake.Topics.GAME_ADMINISTRATION_COMMANDS_TOPIC;
+import static op.kompetensdag.snake.Topics.HEAD_DIRECTION_TOPIC_3;
 
 public class AdministrationProcessor {
 
-    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps, KTable<String, GameStatusRecord> gameStatusKTable, KTable<String, HeadDirectionRecord> headDirectionRecordKTable3) {
+    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps, KTable<String, GameStatusRecord> gameStatusKTable) {
 
         SpecificAvroSerde<GameStatusRecord> gameStatusSerde = new SpecificAvroSerde<>();
-        gameStatusSerde.configure(schemaRegistryProps, false);
-
         SpecificAvroSerde<GameAdministrationCommandRecord> gameAdminSerde = new SpecificAvroSerde<>();
-        gameAdminSerde.configure(schemaRegistryProps, false);
-
         SpecificAvroSerde<GameTableEntry> gameTableEntrySerde = new SpecificAvroSerde<>();
-        gameTableEntrySerde.configure(schemaRegistryProps, false);
-
         SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
+
+        gameStatusSerde.configure(schemaRegistryProps, false);
+        gameAdminSerde.configure(schemaRegistryProps, false);
+        gameTableEntrySerde.configure(schemaRegistryProps, false);
         headDirSerde.configure(schemaRegistryProps, false);
 
         builder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdminSerde))
                 .mapValues((gameId, gameAdminCommand) -> ProcessAdminCommand.builder().gameId(gameId).gameAdministrationCommand(gameAdminCommand.getType()))
-                .leftJoin(gameStatusKTable, (cmdBuilder, gameStatus) -> cmdBuilder.gameStatus(Optional.ofNullable(gameStatus).map( gs -> gs.getType()).orElse(null))) //gameStatus.getType()))
+                .leftJoin(gameStatusKTable, (cmdBuilder, gameStatus) -> cmdBuilder.gameStatus(Optional.ofNullable(gameStatus).map(GameStatusRecord::getType).orElse(null)))
                 .split()
                 .branch((gameId, cmdBuilder) -> cmdBuilder.build().shouldInitializeGame(),
                         Branched.withConsumer(cmdBuilder ->
