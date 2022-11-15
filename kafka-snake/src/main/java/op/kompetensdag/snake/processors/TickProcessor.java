@@ -8,6 +8,8 @@ import op.kompetensdag.snake.model.*;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,8 +17,22 @@ import java.util.Map;
 import java.util.Optional;
 
 import static op.kompetensdag.snake.Topics.*;
-@Builder
+
+@Component
 public class TickProcessor {
+
+    private static StreamsBuilder streamsBuilder;
+
+    private static SpecificAvroSerde<GameTablePosition> gameTablePositionSerde;
+    private static SpecificAvroSerde<GameTableEntry> gameTableEntrySerde;
+    private static SpecificAvroSerde<GameSnakeEntries> gameTableEntriesSerde;
+    private static SpecificAvroSerde<HeadDirectionRecord> headDirSerde;
+    private static SpecificAvroSerde<GameTick> tickSerde;
+    private static SpecificAvroSerde<GameStatusRecord> gameStatusSerde;
+    private static SpecificAvroSerde<ProcessTickCommand> processTickCommandSerde;
+
+    private static KTable<String, HeadDirectionRecord> headDirectionRecordKTable3;
+    private static KStream<String, GameTableEntry> tableEntryLog;
 
 
     private GameTick gameTick;
@@ -28,6 +44,39 @@ public class TickProcessor {
     private String gameId;
 
     private GameTableEntry newPositionEntry;
+
+    @Autowired
+    public TickProcessor(final StreamsBuilder streamsBuilder,
+                         final SpecificAvroSerde<GameTablePosition> gameTablePositionSerde,
+                         final SpecificAvroSerde<GameTableEntry> gameTableEntrySerde,
+                         final SpecificAvroSerde<GameSnakeEntries> gameTableEntriesSerde,
+                         final SpecificAvroSerde<HeadDirectionRecord> headDirSerde,
+                         final SpecificAvroSerde<GameTick> tickSerde,
+                         final SpecificAvroSerde<GameStatusRecord> gameStatusSerde,
+                         final SpecificAvroSerde<ProcessTickCommand> processTickCommandSerde,
+                         final KTable<String, HeadDirectionRecord> headDirectionRecordKTable3,
+                         final KStream<String, GameTableEntry> tableEntryLog) {
+        TickProcessor.streamsBuilder = streamsBuilder;
+        TickProcessor.gameTablePositionSerde = gameTablePositionSerde;
+        TickProcessor.gameTableEntrySerde = gameTableEntrySerde;
+        TickProcessor.gameTableEntriesSerde = gameTableEntriesSerde;
+        TickProcessor.headDirSerde = headDirSerde;
+        TickProcessor.tickSerde = tickSerde;
+        TickProcessor.gameStatusSerde = gameStatusSerde;
+        TickProcessor.processTickCommandSerde = processTickCommandSerde;
+        TickProcessor.headDirectionRecordKTable3 = headDirectionRecordKTable3;
+        TickProcessor.tableEntryLog = tableEntryLog;
+    }
+
+    @Builder
+    public TickProcessor(GameTick gameTick, HeadDirection headDirection, GameTableEntry snakeHead, GameTableEntry snakeTail, String gameId, GameTableEntry newPositionEntry) {
+        this.gameTick = gameTick;
+        this.headDirection = headDirection;
+        this.snakeHead = snakeHead;
+        this.snakeTail = snakeTail;
+        this.gameId = gameId;
+        this.newPositionEntry = newPositionEntry;
+    }
 
     public TablePosition getNewHeadPosition(){
         return switch(headDirection){
@@ -44,16 +93,9 @@ public class TickProcessor {
     }
 
     public Iterable<GameTableEntry> moveSnake(){
-        // 1. add new snake head
-
         GameTableEntry addHead = GameTableEntry.newBuilder(snakeHead).setPosition(getNewHeadPosition()).build();
-
-        // 2. invalidate snake tail
-
         GameTableEntry removeTail = GameTableEntry.newBuilder(snakeTail).setBusy(false).build();
-
         return List.of(addHead,removeTail);
-
     }
 
     public ProcessTickCommand toSerializableObject(){
@@ -69,32 +111,7 @@ public class TickProcessor {
                 .newPositionEntry(newPositionEntry);
     }
 
-    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps,KTable<String, HeadDirectionRecord> headDirectionRecordKTable3,
-                              KStream<String, GameTableEntry> tableEntryLog){
-
-        SpecificAvroSerde<GameTablePosition> gameTablePositionSerde = new SpecificAvroSerde<>();
-        gameTablePositionSerde.configure(schemaRegistryProps, true);
-
-        SpecificAvroSerde<GameTableEntry> gameTableEntrySerde = new SpecificAvroSerde<>();
-        gameTableEntrySerde.configure(schemaRegistryProps, false);
-
-        SpecificAvroSerde<GameSnakeEntries> gameTableEntriesSerde = new SpecificAvroSerde<>();
-        gameTableEntriesSerde.configure(schemaRegistryProps, false);
-
-        SpecificAvroSerde<TablePosition> tablePositionSerde = new SpecificAvroSerde<>();
-        tablePositionSerde.configure(schemaRegistryProps, true);
-
-        SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
-        headDirSerde.configure(schemaRegistryProps, false);
-
-        SpecificAvroSerde<GameTick> tickSerde = new SpecificAvroSerde<>();
-        tickSerde.configure(schemaRegistryProps, false);
-
-        SpecificAvroSerde<GameStatusRecord> gameStatusSerde = new SpecificAvroSerde<>();
-        gameStatusSerde.configure(schemaRegistryProps, false);
-
-        SpecificAvroSerde<ProcessTickCommand> processTickCommandSerde = new SpecificAvroSerde<>();
-        processTickCommandSerde.configure(schemaRegistryProps, false);
+    public static void define(){
 
         KTable<String,GameTableEntry> snakeHead =
                 tableEntryLog
@@ -102,11 +119,6 @@ public class TickProcessor {
                         .groupByKey()
                         .reduce( (current,next) -> next, Named.as("snake-head"),Materialized.with(Serdes.String(),gameTableEntrySerde));
 
-        /*snakeHead
-                .toStream()
-                .mapValues(v -> "Snake head: " + v)
-                .to(GAME_OUTPUT);
-*/
         KTable<String,GameTableEntry> snakeTail =
                 tableEntryLog
                         .filter((game,tableEntry) -> tableEntry.getType() == GameTableEntryType.SNAKE)
@@ -116,11 +128,6 @@ public class TickProcessor {
                             if(newEntry.getBusy()){
                                 list.add(newEntry);
                             } else {
-                                // if(!entries.getEntries().isEmpty()) // it should never be empty if it is not busy snake element
-                                /*if(list.stream().anyMatch( listEntry -> listEntry.getPosition().equals(newEntry.getPosition()))) {
-                                list = list.stream().
-                                        dropWhile( listEntry -> listEntry.getPosition().equals(newEntry.getPosition()))
-                                        .collect(Collectors.toList());*/
                                 list.remove(0);
                             }
                             entries.setEntries(list);
@@ -129,10 +136,6 @@ public class TickProcessor {
                         .filter( (game,entries) -> !entries.getEntries().isEmpty())
                         .mapValues( v -> v.getEntries().get(0));
 
-/*        snakeTail
-                .toStream()
-                .mapValues(v -> "Snake tail: " + v)
-                .to(GAME_OUTPUT);*/
 
         KTable<GameTablePosition,GameTableEntry> positionUsage  =
                 tableEntryLog
@@ -141,28 +144,13 @@ public class TickProcessor {
                         .reduce( (currentValue, next) -> next);
 
 
-        /* KStream<String, GameStatus> gameStatusKStream =
-                builder.stream("game-status",Consumed.with(Serdes.String(),gameStatusSerde));*/
-
-        // join current game status? - will game status change ensure that ticking is stopped?
-        // join current snake direction
-        // join current snake head
-        // join current snake tail
-        // calculate new snake head using current heed and current direction
-        // join all positions on the game table
-        // check if new snake head position is clashing with current state of the position in table
-        // emit a position busy event for head and position empty event for tail
-
-
-        builder.stream(Topics.GAME_TICKS,Consumed.with(Serdes.String(),tickSerde))
+        streamsBuilder.stream(Topics.GAME_TICKS,Consumed.with(Serdes.String(),tickSerde))
                 .mapValues( (game,tick) -> TickProcessor.builder().gameId(game).gameTick(tick))
                 .join(headDirectionRecordKTable3,(cmdBuilder,direction) -> cmdBuilder.headDirection(direction.getType()))
                 .join(snakeHead,(cmdBuilder,head) -> cmdBuilder.snakeHead(head))
                 .join(snakeTail,(cmdBuilder,tail) -> cmdBuilder.snakeTail(tail))
                 .selectKey((gameId,cmdBuilder) -> new GameTablePosition(cmdBuilder.build().getNewHeadPosition(),gameId))
-                // change value to persistent avro entity
                 .mapValues((tablePosition,cmdBuilder) -> cmdBuilder.build().toSerializableObject())
-//                .groupByKey(Grouped.keySerde(gameTablePositionSerde))
                 .leftJoin(positionUsage,
                             (readOnlyKey, processTickCommand, gameTableEntry) -> fromProcessTickCommand(processTickCommand,gameTableEntry),
                             Joined.with(gameTablePositionSerde,processTickCommandSerde,gameTableEntrySerde))
@@ -181,6 +169,4 @@ public class TickProcessor {
                         ));
 
     }
-
-
 }

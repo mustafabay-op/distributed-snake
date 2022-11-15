@@ -10,31 +10,47 @@ import org.apache.kafka.streams.kstream.Branched;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Produced;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Optional;
 
 import static op.kompetensdag.snake.Topics.*;
 
+@Component
 public class AdministrationProcessor {
 
-    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps, KTable<String, GameStatusRecord> gameStatusKTable, KTable<String, HeadDirectionRecord> headDirectionRecordKTable3) {
+    private static StreamsBuilder streamsBuilder;
 
-        SpecificAvroSerde<GameStatusRecord> gameStatusSerde = new SpecificAvroSerde<>();
-        gameStatusSerde.configure(schemaRegistryProps, false);
+    private static SpecificAvroSerde<GameStatusRecord> gameStatusSerde;
+    private static SpecificAvroSerde<GameAdministrationCommandRecord> gameAdminSerde;
+    private static SpecificAvroSerde<GameTableEntry> gameTableEntrySerde;
+    private static SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
 
-        SpecificAvroSerde<GameAdministrationCommandRecord> gameAdminSerde = new SpecificAvroSerde<>();
-        gameAdminSerde.configure(schemaRegistryProps, false);
+    private static KTable<String, GameStatusRecord> gameStatusKTable;
 
-        SpecificAvroSerde<GameTableEntry> gameTableEntrySerde = new SpecificAvroSerde<>();
-        gameTableEntrySerde.configure(schemaRegistryProps, false);
+    @Autowired
+    public AdministrationProcessor(final StreamsBuilder streamsBuilder,
+                                   final SpecificAvroSerde<GameAdministrationCommandRecord> gameAdminSerde,
+                                   final SpecificAvroSerde<GameStatusRecord> gameStatusSerde,
+                                   final SpecificAvroSerde<GameTableEntry> gameTableEntrySerde,
+                                   final SpecificAvroSerde<HeadDirectionRecord> headDirSerde,
+                                   final KTable<String, GameStatusRecord> gameStatusKTable) {
+        AdministrationProcessor.streamsBuilder = streamsBuilder;
+        AdministrationProcessor.gameAdminSerde = gameAdminSerde;
+        AdministrationProcessor.gameStatusSerde = gameStatusSerde;
+        AdministrationProcessor.gameTableEntrySerde = gameTableEntrySerde;
+        AdministrationProcessor.headDirSerde = headDirSerde;
+        AdministrationProcessor.gameStatusKTable = gameStatusKTable;
+    }
 
-        SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
-        headDirSerde.configure(schemaRegistryProps, false);
+    public static void define() {
 
-        builder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdminSerde))
+
+        streamsBuilder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdminSerde))
                 .mapValues((gameId, gameAdminCommand) -> ProcessAdminCommand.builder().gameId(gameId).gameAdministrationCommand(gameAdminCommand.getType()))
-                .leftJoin(gameStatusKTable, (cmdBuilder, gameStatus) -> cmdBuilder.gameStatus(Optional.ofNullable(gameStatus).map( gs -> gs.getType()).orElse(null))) //gameStatus.getType()))
+                .leftJoin(gameStatusKTable, (cmdBuilder, gameStatus) -> cmdBuilder.gameStatus(Optional.ofNullable(gameStatus).map(gs -> gs.getType()).orElse(null))) //gameStatus.getType()))
                 .split()
                 .branch((gameId, cmdBuilder) -> cmdBuilder.build().shouldInitializeGame(),
                         Branched.withConsumer(cmdBuilder ->
@@ -72,18 +88,5 @@ public class AdministrationProcessor {
                 .filter((key, value) -> value.getType().equals(GameStatus.INITIALIZING))
                 .mapValues(value -> new HeadDirectionRecord(HeadDirection.NORTH))
                 .to(HEAD_DIRECTION_TOPIC_3, Produced.with(Serdes.String(), headDirSerde));
-
-/*        gameStatusKTable
-                .toStream()
-                .mapValues(v -> "GameStatus: " + v)
-                .to(GAME_OUTPUT);
-
-        builder.stream(ILLEGAL_ARGUMENTS_TOPIC, Consumed.with(Serdes.String(), Serdes.String()))
-                .mapValues(v -> "IllegalArguments: " + v)
-                .to(GAME_OUTPUT);
-
-        builder.stream(GAME_TABLE_ENTRIES, Consumed.with(Serdes.String(), gameTableEntrySerde))
-                .mapValues(v -> "GameTableEntries: " + v)
-                .to(GAME_OUTPUT);*/
     }
 }

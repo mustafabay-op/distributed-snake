@@ -4,34 +4,44 @@ import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import op.kompetensdag.snake.Topics;
 import op.kompetensdag.snake.model.*;
 import op.kompetensdag.snake.util.Join;
-
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Produced;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-import static op.kompetensdag.snake.Topics.*;
+import static op.kompetensdag.snake.Topics.GAME_MOVEMENT_COMMANDS_TOPIC;
 import static op.kompetensdag.snake.model.HeadDirection.*;
 
+@Component
 public class MovementProcessor {
 
-    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps, KTable<String, GameStatusRecord> gameStatusKTable, KTable<String, HeadDirectionRecord> headDirectionRecordKTable3) {
+    private static StreamsBuilder streamsBuilder;
 
-        SpecificAvroSerde<GameMovementKeyPressedRecord> gameMovementKeyPressedSerde = new SpecificAvroSerde<>();
-        gameMovementKeyPressedSerde.configure(schemaRegistryProps, false);
+    private static SpecificAvroSerde<GameMovementKeyPressedRecord> gameMovementKeyPressedSerde;
+    private static SpecificAvroSerde<HeadDirectionRecord> headDirSerde;
 
-        SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
-        headDirSerde.configure(schemaRegistryProps, false);
+    private static KTable<String, GameStatusRecord> gameStatusKTable;
+    private static KTable<String, HeadDirectionRecord> headDirectionRecordKTable3;
 
-/*
+    public MovementProcessor(final StreamsBuilder streamsBuilder,
+                             final SpecificAvroSerde<GameMovementKeyPressedRecord> gameMovementKeyPressedSerde,
+                             final SpecificAvroSerde<HeadDirectionRecord> headDirSerde,
+                             final KTable<String, GameStatusRecord> gameStatusKTable,
+                             final KTable<String, HeadDirectionRecord> headDirectionRecordKTable3) {
+        MovementProcessor.streamsBuilder = streamsBuilder;
+        MovementProcessor.gameMovementKeyPressedSerde = gameMovementKeyPressedSerde;
+        MovementProcessor.headDirSerde = headDirSerde;
+        MovementProcessor.gameStatusKTable = gameStatusKTable;
+        MovementProcessor.headDirectionRecordKTable3 = headDirectionRecordKTable3;
+    }
 
-        headDirectionRecordKTable3.mapValues(v -> "HeadDir: " + v).toStream().to(GAME_OUTPUT);
-*/
-
-        builder
+    public static void define() {
+        streamsBuilder
                 .stream(GAME_MOVEMENT_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameMovementKeyPressedSerde))
                 .join(gameStatusKTable, (movementCommand, gameStatus) -> new Join<>(movementCommand, gameStatus))
                 .filter((k, movementAndStateJoin) -> movementAndStateJoin.r().getType().equals(GameStatus.RUNNING))

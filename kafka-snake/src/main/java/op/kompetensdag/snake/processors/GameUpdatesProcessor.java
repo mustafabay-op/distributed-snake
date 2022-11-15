@@ -1,21 +1,39 @@
 package op.kompetensdag.snake.processors;
 
 import op.kompetensdag.snake.Color;
+import op.kompetensdag.snake.model.GameStatus;
+import op.kompetensdag.snake.model.GameStatusRecord;
 import op.kompetensdag.snake.model.GameTableEntry;
 import op.kompetensdag.snake.model.GameTableEntryType;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Produced;
+import org.springframework.stereotype.Component;
 
 import static op.kompetensdag.snake.Topics.GAME_OUTPUT;
 
+@Component
 public class GameUpdatesProcessor {
+    public static KStream<String, GameTableEntry> tableEntryLog;
+    public static KTable<String, GameStatusRecord> gameStatusKTable;
 
     public static final String DELIMITER = "-";
 
-    public static void define(final KStream<String, GameTableEntry> tableEntryLog) {
+    public GameUpdatesProcessor(KStream<String, GameTableEntry> tableEntryLog, KTable<String, GameStatusRecord> gameStatusKTable) {
+        GameUpdatesProcessor.tableEntryLog = tableEntryLog;
+        GameUpdatesProcessor.gameStatusKTable = gameStatusKTable;
+    }
+
+    public static void define() {
         tableEntryLog
                 .mapValues(GameUpdatesProcessor::getOutputString)
+                .to(GAME_OUTPUT, Produced.with(Serdes.String(), Serdes.String()));
+
+        gameStatusKTable
+                .toStream()
+                .filter((k, v) -> v.getType() == GameStatus.ENDED)
+                .mapValues(v -> "0-0-RED")
                 .to(GAME_OUTPUT, Produced.with(Serdes.String(), Serdes.String()));
     }
 

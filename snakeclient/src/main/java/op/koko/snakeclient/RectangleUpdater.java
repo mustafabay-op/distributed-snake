@@ -26,6 +26,7 @@ public class RectangleUpdater extends AnimationTimer {
                 case GREEN -> rect.setFill(Color.DARKGREEN);
                 case WHITE -> rect.setFill(Color.WHITESMOKE);
                 case BLACK -> rect.setFill(Color.BLACK);
+                case RED -> Screen.showMainMenuScene();
             }
         }
     }

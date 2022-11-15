@@ -36,10 +36,10 @@ public class Screen extends Application {
 
     private GridPane pane;
     private Scene playScene;
-    private Scene mainMenuScene;
+    private static Scene mainMenuScene;
     private Controller controller;
     private RectangleUpdater rectangleUpdater;
-    private Stage stage;
+    private static Stage stage;
 
     public static void main(String[] args) {
         setupConsumer();
@@ -54,7 +54,7 @@ public class Screen extends Application {
         showMainMenuScene();
     }
 
-    private void showMainMenuScene() {
+    public static void showMainMenuScene() {
         stage.setScene(mainMenuScene);
         stage.show();
     }
@@ -65,7 +65,7 @@ public class Screen extends Application {
         headingLabel.setAlignment(Pos.TOP_CENTER);
         startGameLink.setAlignment(Pos.CENTER);
         startGameLink.setOnAction(e -> {
-            controller.sendAdministrationKeyEvent(KeyCode.SPACE);
+            controller.sendStartStopEvent(KeyCode.SPACE);
             showFreshPlayScene();
         });
         HBox startGameHBox = new HBox(1, startGameLink);
@@ -94,7 +94,6 @@ public class Screen extends Application {
 
         stage.setScene(playScene);
         stage.show();
-        //controller.setGameId(UUID.randomUUID().toString());
         rectangleUpdater.start();
     }
 
@@ -112,7 +111,6 @@ public class Screen extends Application {
         builder.stream(GAME_OUTPUT, Consumed.with(Serdes.String(), Serdes.String()))
                 .filter((key, value) -> key.equalsIgnoreCase(Controller.gameId))
                 .mapValues(value -> {
-
                     String[] arr = value.split("-");
                     return new Dot(Integer.parseInt(arr[0]), Integer.parseInt(arr[1]), op.koko.snakeclient.model.Color.valueOf(arr[2].toUpperCase(Locale.ROOT)));
                 })
@@ -126,7 +124,7 @@ public class Screen extends Application {
         scene.setOnKeyPressed(event -> {
             switch (event.getCode()) {
                 case UP, DOWN, LEFT, RIGHT -> controller.sendMovementKeyPressedEvent(event.getCode());
-                case SPACE -> controller.sendAdministrationKeyEvent(event.getCode());
+                case SPACE -> controller.sendPauseEvent(event.getCode());
             }
         });
     }

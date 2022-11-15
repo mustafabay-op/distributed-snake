@@ -1,72 +1,46 @@
 package op.kompetensdag.snake;
 
-import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
-import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import op.kompetensdag.snake.model.GameStatusRecord;
-import op.kompetensdag.snake.model.GameTableEntry;
-import op.kompetensdag.snake.model.HeadDirectionRecord;
 import op.kompetensdag.snake.processors.*;
-import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
-import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KTable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
-import static op.kompetensdag.snake.Topics.GAME_STATUS_TOPIC;
-import static op.kompetensdag.snake.Topics.GAME_TABLE_ENTRIES;
-
 @SpringBootApplication
+@Component
 public class SnakeApplication {
+
+
+    private static StreamsBuilder streamsBuilder;
+    private static Properties streamProperties;
+
+    @Autowired
+    public SnakeApplication(final StreamsBuilder streamsBuilder,
+                            final Properties streamProperties) {
+        SnakeApplication.streamsBuilder = streamsBuilder;
+        SnakeApplication.streamProperties = streamProperties;
+    }
 
     public static void main(String[] args) {
         SpringApplication.run(SnakeApplication.class, args);
 
-        Properties props = new Properties();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-snake");
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
-        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-        props.put(AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, true);
-        props.put("schema.registry.url", "http://localhost:8081");
 
-        Map<String, String> schemaRegistryProps = Collections.singletonMap(
-                AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, props.getProperty("schema.registry.url"));
-
-        final StreamsBuilder builder = new StreamsBuilder();
-
-        SpecificAvroSerde<GameStatusRecord> gameStatusSerde = new SpecificAvroSerde<>();
-        gameStatusSerde.configure(schemaRegistryProps, false);
-
-        SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
-        headDirSerde.configure(schemaRegistryProps, false);
-
-        SpecificAvroSerde<GameTableEntry> gameTableEntrySerde = new SpecificAvroSerde<>();
-        gameTableEntrySerde.configure(schemaRegistryProps, false);
-
-        KTable<String, HeadDirectionRecord> headDirectionRecordKTable3 = builder.table(Topics.HEAD_DIRECTION_TOPIC_3, Consumed.with(Serdes.String(), headDirSerde));
-        KStream<String, GameTableEntry> tableEntryLog = builder.stream(GAME_TABLE_ENTRIES, Consumed.with(Serdes.String(), gameTableEntrySerde));
-
-        GameInputRouter.define(builder, schemaRegistryProps);
-        KTable<String, GameStatusRecord> gameStatusKTable = builder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde));
-        AdministrationProcessor.define(builder, schemaRegistryProps, gameStatusKTable, headDirectionRecordKTable3);
-        MovementProcessor.define(builder, schemaRegistryProps, gameStatusKTable, headDirectionRecordKTable3);
-        TickGenerator.define(gameStatusKTable, schemaRegistryProps);
-        TickProcessor.define(builder, schemaRegistryProps, headDirectionRecordKTable3, tableEntryLog);
-        GameUpdatesProcessor.define(tableEntryLog);
+        GameInputRouter.define();
+        AdministrationProcessor.define();
+        MovementProcessor.define();
+        TickGenerator.define();
+        TickProcessor.define();
+        GameUpdatesProcessor.define();
 
 
-        final Topology topology = builder.build();
-        final KafkaStreams streams = new KafkaStreams(topology, props);
+        final Topology topology = streamsBuilder.build();
+        final KafkaStreams streams = new KafkaStreams(topology, streamProperties);
         final CountDownLatch latch = new CountDownLatch(1);
 
         Runtime.getRuntime().addShutdownHook(new Thread("streams-shutdown-hook") {

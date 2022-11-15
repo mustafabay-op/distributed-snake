@@ -13,13 +13,16 @@ public class Controller {
         this.gameEventProducer = gameEventProducer;
     }
 
-    public void sendMovementKeyPressedEvent(KeyCode keyCode) {
+    public void sendMovementKeyPressedEvent(final KeyCode keyCode) {
         gameEventProducer.produce(gameId, keyCode);
     }
 
-    public void sendAdministrationKeyEvent(KeyCode keyCode) {
-        if (gameId == null)
-            setGameId(UUID.randomUUID().toString());
+    public void sendPauseEvent(final KeyCode keyCode) {
+        gameEventProducer.produce(gameId, keyCode);
+    }
+
+    public void sendStartStopEvent(final KeyCode keyCode) {
+        setGameId(UUID.randomUUID().toString());
         gameEventProducer.produce(gameId, keyCode);
     }
 
