@@ -6,9 +6,12 @@ import op.kompetensdag.snake.model.GameStatusRecord;
 import op.kompetensdag.snake.model.GameTick;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.kstream.*;
-import org.apache.kafka.streams.processor.PunctuationType;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.Transformer;
+import org.apache.kafka.streams.kstream.TransformerSupplier;
 import org.apache.kafka.streams.processor.ProcessorContext;
+import org.apache.kafka.streams.processor.PunctuationType;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
@@ -19,16 +22,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-public class TickGenerator implements Transformer<String, GameStatusRecord, KeyValue<String,GameTick>> {
-
-    private ProcessorContext context;
-    private KeyValueStore<String, Short> gameRunningStatus;
+public class TickGenerator implements Transformer<String, GameStatusRecord, KeyValue<String, GameTick>> {
 
     private static final String STATE_STORE_NAME = "GameRunningStatus";
-
-    private static final TransformerSupplier<String,GameStatusRecord,KeyValue<String,GameTick>> tickGeneratorSupplier =
+    private static final TransformerSupplier<String, GameStatusRecord, KeyValue<String, GameTick>> tickGeneratorSupplier =
             new TransformerSupplier<>() {
-                public Transformer<String, GameStatusRecord, KeyValue<String,GameTick>> get() {
+                public Transformer<String, GameStatusRecord, KeyValue<String, GameTick>> get() {
                     return new TickGenerator();
                 }
 
@@ -43,8 +42,10 @@ public class TickGenerator implements Transformer<String, GameStatusRecord, KeyV
                     return Collections.singleton(countsStoreBuilder);
                 }
             };
+    private ProcessorContext context;
+    private KeyValueStore<String, Short> gameRunningStatus;
 
-    public static void define(KTable<String, GameStatusRecord> gameStatusKTable, Map<String, String> schemaRegistryProps){
+    public static void define(KTable<String, GameStatusRecord> gameStatusKTable, Map<String, String> schemaRegistryProps) {
 
 
         // get a table view of game status
@@ -64,7 +65,7 @@ public class TickGenerator implements Transformer<String, GameStatusRecord, KeyV
         gameStatusKTable
                 .toStream()
                 .transform(tickGeneratorSupplier)
-                .to(Topics.GAME_TICKS, Produced.with(Serdes.String(),tickSerde));
+                .to(Topics.GAME_TICKS, Produced.with(Serdes.String(), tickSerde));
 
     }
 
@@ -74,10 +75,10 @@ public class TickGenerator implements Transformer<String, GameStatusRecord, KeyV
         this.context = context;
         this.gameRunningStatus = context.getStateStore(STATE_STORE_NAME);
         this.context.
-                schedule(Duration.ofMillis(500), PunctuationType.WALL_CLOCK_TIME,timestamp -> {
-                    gameRunningStatus.all().forEachRemaining( status ->  {
+                schedule(Duration.ofMillis(500), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
+                    gameRunningStatus.all().forEachRemaining(status -> {
                         boolean isGameRunning = status.value == 1;
-                        if(isGameRunning){
+                        if (isGameRunning) {
                             context.forward(status.key, new GameTick(Instant.ofEpochMilli(timestamp)));
                         }
                     });
@@ -85,10 +86,10 @@ public class TickGenerator implements Transformer<String, GameStatusRecord, KeyV
     }
 
     @Override
-    public KeyValue<String,GameTick> transform(String key, GameStatusRecord value) {
-        switch(value.getType()){
-            case STARTED , RUNNING -> gameRunningStatus.putIfAbsent(key, (short)1);
-            case PAUSED , ENDED -> gameRunningStatus.putIfAbsent(key, (short)0);
+    public KeyValue<String, GameTick> transform(String key, GameStatusRecord value) {
+        switch (value.getType()) {
+            case STARTED, RUNNING -> gameRunningStatus.putIfAbsent(key, (short) 1);
+            case PAUSED, ENDED -> gameRunningStatus.putIfAbsent(key, (short) 0);
         }
         return null;
     }

@@ -6,7 +6,6 @@ import op.kompetensdag.snake.model.GameAdministrationCommandRecord;
 import op.kompetensdag.snake.model.GameMovementKeyPressed;
 import op.kompetensdag.snake.model.GameMovementKeyPressedRecord;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 
@@ -20,9 +19,9 @@ public class GameInputRouter {
     public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps) {
 
         SpecificAvroSerde<GameMovementKeyPressedRecord> gameMovementKeyPressedSerde = new SpecificAvroSerde<>();
-        gameMovementKeyPressedSerde.configure(schemaRegistryProps, false);
-
         SpecificAvroSerde<GameAdministrationCommandRecord> gameAdministrationSerde = new SpecificAvroSerde<>();
+
+        gameMovementKeyPressedSerde.configure(schemaRegistryProps, false);
         gameAdministrationSerde.configure(schemaRegistryProps, false);
 
         BranchedKStream<String, String> gameInputBranched = builder

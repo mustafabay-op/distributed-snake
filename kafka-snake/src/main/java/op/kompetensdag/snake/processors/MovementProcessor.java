@@ -23,12 +23,12 @@ public class MovementProcessor {
     private HeadDirectionRecord intendedHeadDirection;
     private HeadDirectionRecord currentHeadDirection;
 
-    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps, KTable<String, GameStatusRecord> gameStatusKTable, KTable<String, HeadDirectionRecord> headDirectionRecordKTable3) {
+    public static void define(final StreamsBuilder builder, Map<String, String> schemaRegistryProps, KTable<String, GameStatusRecord> gameStatusKTable, KTable<String, HeadDirectionRecord> currentHeadDirectionTable) {
 
         SpecificAvroSerde<GameMovementKeyPressedRecord> gameMovementKeyPressedSerde = new SpecificAvroSerde<>();
-        gameMovementKeyPressedSerde.configure(schemaRegistryProps, false);
-
         SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
+
+        gameMovementKeyPressedSerde.configure(schemaRegistryProps, false);
         headDirSerde.configure(schemaRegistryProps, false);
 
         builder
@@ -36,12 +36,12 @@ public class MovementProcessor {
                 .mapValues((game, movement) -> MovementProcessor.builder().intendedHeadDirection(getIntendedHeadDirection(movement.getType())))
                 .join(gameStatusKTable, MovementProcessorBuilder::gameStatus)
                 .filter((k, cmdBuilder) -> cmdBuilder.gameStatus.equals(new GameStatusRecord(GameStatus.RUNNING)))
-                .join(headDirectionRecordKTable3, MovementProcessorBuilder::currentHeadDirection)
+                .join(currentHeadDirectionTable, MovementProcessorBuilder::currentHeadDirection)
                 .filter((k, cmdBuilder) -> cmdBuilder.build().isIntendedMoveValid())
                 .mapValues(cmdBuilder -> new HeadDirectionRecord(cmdBuilder.build().intendedHeadDirection.getType()))
                 .to(Topics.HEAD_DIRECTION_TOPIC_3, Produced.with(Serdes.String(), headDirSerde));
 
-        /*headDirectionRecordKTable3.mapValues(v -> "HeadDir: " + v).toStream().to(GAME_OUTPUT);*/
+        /*currentHeadDirectionTable.mapValues(v -> "HeadDir: " + v).toStream().to(GAME_OUTPUT);*/
     }
 
     private static boolean isOpposite(HeadDirection newDirection, HeadDirection currentDirection) {
