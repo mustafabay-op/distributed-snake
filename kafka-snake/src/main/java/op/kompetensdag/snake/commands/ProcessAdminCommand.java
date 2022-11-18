@@ -2,8 +2,8 @@ package op.kompetensdag.snake.commands;
 
 import lombok.Builder;
 import lombok.Getter;
-import op.kompetensdag.snake.GameWall;
-import op.kompetensdag.snake.Position;
+import op.kompetensdag.snake.model.GameWall;
+import op.kompetensdag.snake.model.Position;
 import op.kompetensdag.snake.model.*;
 
 import java.util.ArrayList;

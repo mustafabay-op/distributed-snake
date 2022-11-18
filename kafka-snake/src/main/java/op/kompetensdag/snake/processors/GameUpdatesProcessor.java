@@ -1,9 +1,8 @@
 package op.kompetensdag.snake.processors;
 
-import op.kompetensdag.snake.Color;
+import op.kompetensdag.snake.model.Color;
 import op.kompetensdag.snake.model.GameTableEntry;
 import op.kompetensdag.snake.model.GameTableEntryType;
-import org.springframework.stereotype.Component;
 
 public class GameUpdatesProcessor {
     public static final String DELIMITER = "-";

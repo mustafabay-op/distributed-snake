@@ -6,7 +6,6 @@ import op.kompetensdag.snake.model.GameStatus;
 import op.kompetensdag.snake.model.GameStatusRecord;
 import op.kompetensdag.snake.model.HeadDirectionRecord;
 import op.kompetensdag.snake.processors.MovementProcessor;
-import op.kompetensdag.snake.util.Join;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;

@@ -3,7 +3,6 @@ package op.kompetensdag.snake.processors;
 import lombok.Builder;
 import lombok.Getter;
 import op.kompetensdag.snake.model.*;
-import op.kompetensdag.snake.util.Join;
 
 import static op.kompetensdag.snake.model.HeadDirection.*;
 

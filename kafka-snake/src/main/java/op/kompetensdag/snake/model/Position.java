@@ -1,4 +1,4 @@
-package op.kompetensdag.snake;
+package op.kompetensdag.snake.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

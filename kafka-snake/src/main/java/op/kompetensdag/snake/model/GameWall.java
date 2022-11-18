@@ -1,8 +1,4 @@
-package op.kompetensdag.snake;
-
-import op.kompetensdag.snake.model.GameTableEntry;
-import op.kompetensdag.snake.model.GameTableEntryType;
-import op.kompetensdag.snake.model.TablePosition;
+package op.kompetensdag.snake.model;
 
 import java.util.ArrayList;
 import java.util.List;
