@@ -1,4 +1,4 @@
-package op.kompetensdag.snake.processors;
+package op.kompetensdag.snake.config;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import op.kompetensdag.snake.Topics;
@@ -11,41 +11,24 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Produced;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
 import java.util.Optional;
 
 import static op.kompetensdag.snake.Topics.*;
 
-@Component
-public class AdministrationProcessor {
+@Configuration
+public class AdministrationProcessorConfig {
 
-    private static StreamsBuilder streamsBuilder;
-
-    private static SpecificAvroSerde<GameStatusRecord> gameStatusSerde;
-    private static SpecificAvroSerde<GameAdministrationCommandRecord> gameAdminSerde;
-    private static SpecificAvroSerde<GameTableEntry> gameTableEntrySerde;
-    private static SpecificAvroSerde<HeadDirectionRecord> headDirSerde = new SpecificAvroSerde<>();
-
-    private static KTable<String, GameStatusRecord> gameStatusKTable;
-
-    @Autowired
-    public AdministrationProcessor(final StreamsBuilder streamsBuilder,
-                                   final SpecificAvroSerde<GameAdministrationCommandRecord> gameAdminSerde,
-                                   final SpecificAvroSerde<GameStatusRecord> gameStatusSerde,
-                                   final SpecificAvroSerde<GameTableEntry> gameTableEntrySerde,
-                                   final SpecificAvroSerde<HeadDirectionRecord> headDirSerde,
-                                   final KTable<String, GameStatusRecord> gameStatusKTable) {
-        AdministrationProcessor.streamsBuilder = streamsBuilder;
-        AdministrationProcessor.gameAdminSerde = gameAdminSerde;
-        AdministrationProcessor.gameStatusSerde = gameStatusSerde;
-        AdministrationProcessor.gameTableEntrySerde = gameTableEntrySerde;
-        AdministrationProcessor.headDirSerde = headDirSerde;
-        AdministrationProcessor.gameStatusKTable = gameStatusKTable;
-    }
-
-    public static void define() {
+    @Bean
+    public Object gameStatueProcessingTopology(final StreamsBuilder streamsBuilder,
+                                                final SpecificAvroSerde<GameAdministrationCommandRecord> gameAdminSerde,
+                                                final SpecificAvroSerde<GameStatusRecord> gameStatusSerde,
+                                                final SpecificAvroSerde<GameTableEntry> gameTableEntrySerde,
+                                                final SpecificAvroSerde<HeadDirectionRecord> headDirSerde,
+                                                final KTable<String, GameStatusRecord> gameStatusKTable) {
 
 
         streamsBuilder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdminSerde))
@@ -88,5 +71,13 @@ public class AdministrationProcessor {
                 .filter((key, value) -> value.getType().equals(GameStatus.INITIALIZING))
                 .mapValues(value -> new HeadDirectionRecord(HeadDirection.NORTH))
                 .to(HEAD_DIRECTION_TOPIC_3, Produced.with(Serdes.String(), headDirSerde));
+
+        return null;
+    }
+
+    @Bean
+    KTable<String, GameStatusRecord> gameStatusKTable(final StreamsBuilder streamsBuilder,
+                                                      final SpecificAvroSerde<GameStatusRecord> gameStatusSerde) {
+        return streamsBuilder.table(GAME_STATUS_TOPIC, Consumed.with(Serdes.String(), gameStatusSerde));
     }
 }

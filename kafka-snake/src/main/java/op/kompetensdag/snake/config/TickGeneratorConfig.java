@@ -1,10 +1,14 @@
 package op.kompetensdag.snake.config;
 
+import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
+import op.kompetensdag.snake.Topics;
 import op.kompetensdag.snake.model.GameStatusRecord;
 import op.kompetensdag.snake.model.GameTick;
 import op.kompetensdag.snake.processors.TickGenerator;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.kstream.TransformerSupplier;
 import org.apache.kafka.streams.state.KeyValueStore;
@@ -41,5 +45,16 @@ public class TickGeneratorConfig {
                     }
                 };
         return tickGeneratorSupplier;
+    }
+
+    @Bean
+    public Object tickGenerationControlTopology(final KTable<String, GameStatusRecord> gameStatusKTable,
+                                              final SpecificAvroSerde<GameTick> tickSerde,
+                                              TransformerSupplier<String, GameStatusRecord, KeyValue<String, GameTick>> tickGeneratorSupplier) {
+        gameStatusKTable
+                .toStream()
+                .transform(tickGeneratorSupplier)
+                .to(Topics.GAME_TICKS, Produced.with(Serdes.String(), tickSerde));
+        return null;
     }
 }

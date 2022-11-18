@@ -1,6 +1,5 @@
 package op.kompetensdag.snake;
 
-import op.kompetensdag.snake.processors.*;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
@@ -13,9 +12,7 @@ import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
 @SpringBootApplication
-@Component
 public class SnakeApplication {
-
 
     private static StreamsBuilder streamsBuilder;
     private static Properties streamProperties;
@@ -29,14 +26,6 @@ public class SnakeApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(SnakeApplication.class, args);
-
-
-        GameInputRouter.define();
-        AdministrationProcessor.define();
-        MovementProcessor.define();
-        TickGenerator.define();
-        TickProcessor.define();
-        GameUpdatesProcessor.define();
 
 
         final Topology topology = streamsBuilder.build();
