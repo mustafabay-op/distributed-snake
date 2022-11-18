@@ -38,8 +38,9 @@ public class TickGenerator implements Transformer<String, GameStatusRecord, KeyV
     @Override
     public KeyValue<String, GameTick> transform(String key, GameStatusRecord value) {
         switch (value.getType()) {
-            case STARTED, RUNNING -> gameRunningStatus.putIfAbsent(key, (short) 1);
-            case PAUSED, ENDED -> gameRunningStatus.putIfAbsent(key, (short) 0);
+            case STARTED, RUNNING -> gameRunningStatus.put(key, (short) 1);
+            case PAUSED -> gameRunningStatus.put(key, (short) 0);
+            case ENDED -> gameRunningStatus.delete(key);
         }
         return null;
     }
