@@ -51,6 +51,7 @@ public class Screen extends Application {
         this.stage = stage;
         this.controller = setupController();
         this.mainMenuScene = createMainMenuScene();
+        stage.setOnCloseRequest((e) -> System.exit(0));
         showMainMenuScene();
     }
 
@@ -158,7 +159,7 @@ public class Screen extends Application {
             for (int y = 0; y < rectangles[x].length; y++) {
                 Rectangle rectangle = new Rectangle(25, 25);
                 rectangles[x][y] = rectangle;
-                pane.add(rectangle, x, y);
+                pane.add(rectangle, x, 24-y);
             }
         }
         return pane;
