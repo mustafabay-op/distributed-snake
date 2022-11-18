@@ -14,7 +14,7 @@ import org.apache.kafka.streams.kstream.Produced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import static op.kompetensdag.snake.Topics.*;
+import static op.kompetensdag.snake.config.Topics.*;
 
 @Configuration
 public class GameInputRouterConfig {

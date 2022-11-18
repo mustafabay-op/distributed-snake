@@ -44,7 +44,7 @@ public class TickProcessor {
     }
 
     public boolean isNewHeadPositionTaken() {
-        return Optional.ofNullable(newPositionEntry).map(entry -> entry.getBusy()).orElse(false);
+        return Optional.ofNullable(newPositionEntry).map(GameTableEntry::getBusy).orElse(false);
     }
 
     public Iterable<GameTableEntry> moveSnake() {

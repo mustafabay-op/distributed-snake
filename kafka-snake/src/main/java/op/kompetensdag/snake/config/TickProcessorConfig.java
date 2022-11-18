@@ -1,13 +1,11 @@
 package op.kompetensdag.snake.config;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import op.kompetensdag.snake.Topics;
 import op.kompetensdag.snake.model.*;
 import op.kompetensdag.snake.processors.TickProcessor;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,10 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static op.kompetensdag.snake.Topics.GAME_TABLE_ENTRIES;
+import static op.kompetensdag.snake.config.Topics.GAME_TABLE_ENTRIES;
 
 @Configuration
 public class TickProcessorConfig {
+
+    public static final String SNAKE_HEAD_REDUCE_NAME = "snake-head";
 
     @Bean
     public KStream<String, GameTableEntry> tableEntryLog(final StreamsBuilder streamsBuilder,
@@ -30,9 +30,9 @@ public class TickProcessorConfig {
     public KTable<String, GameTableEntry> snakeHead(final KStream<String, GameTableEntry> tableEntryLog,
                                                     final SpecificAvroSerde<GameTableEntry> gameTableEntrySerde) {
         return tableEntryLog
-                .filter((game, tableEntry) -> tableEntry.getType() == GameTableEntryType.SNAKE && tableEntry.getBusy() == true)
+                .filter((game, tableEntry) -> tableEntry.getType() == GameTableEntryType.SNAKE && tableEntry.getBusy())
                 .groupByKey()
-                .reduce((current, next) -> next, Named.as("snake-head"), Materialized.with(Serdes.String(), gameTableEntrySerde));
+                .reduce((current, next) -> next, Named.as(SNAKE_HEAD_REDUCE_NAME), Materialized.with(Serdes.String(), gameTableEntrySerde));
     }
 
     @Bean
@@ -75,7 +75,7 @@ public class TickProcessorConfig {
                       final SpecificAvroSerde<GameTick> tickSerde,
                       final SpecificAvroSerde<GameStatusRecord> gameStatusSerde,
                       final SpecificAvroSerde<ProcessTickCommand> processTickCommandSerde,
-                      final KTable<String, HeadDirectionRecord> headDirectionRecordKTable3,
+                      final KTable<String, HeadDirectionRecord> headDirectionRecordKTable,
                       final KTable<String, GameTableEntry> snakeTail,
                       final KTable<String, GameTableEntry> snakeHead,
                       final KTable<GameTablePosition, GameTableEntry> positionUsage
@@ -83,9 +83,9 @@ public class TickProcessorConfig {
 
         return streamsBuilder.stream(Topics.GAME_TICKS, Consumed.with(Serdes.String(), tickSerde))
                 .mapValues((game, tick) -> TickProcessor.builder().gameId(game).gameTick(tick))
-                .join(headDirectionRecordKTable3, (cmdBuilder, direction) -> cmdBuilder.headDirection(direction.getType()))
-                .join(snakeHead, (cmdBuilder, head) -> cmdBuilder.snakeHead(head))
-                .join(snakeTail, (cmdBuilder, tail) -> cmdBuilder.snakeTail(tail))
+                .join(headDirectionRecordKTable, (cmdBuilder, direction) -> cmdBuilder.headDirection(direction.getType()))
+                .join(snakeHead, TickProcessor.TickProcessorBuilder::snakeHead)
+                .join(snakeTail, TickProcessor.TickProcessorBuilder::snakeTail)
                 .selectKey((gameId, cmdBuilder) -> new GameTablePosition(cmdBuilder.build().getNewHeadPosition(), gameId))
                 .mapValues((tablePosition, cmdBuilder) -> cmdBuilder.build().toSerializableObject())
                 .leftJoin(positionUsage,

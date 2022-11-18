@@ -1,7 +1,6 @@
 package op.kompetensdag.snake.config;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import op.kompetensdag.snake.Topics;
 import op.kompetensdag.snake.model.GameStatusRecord;
 import op.kompetensdag.snake.model.GameTick;
 import op.kompetensdag.snake.processors.TickGenerator;

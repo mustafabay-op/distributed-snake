@@ -1,7 +1,6 @@
 package op.kompetensdag.snake.config;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import op.kompetensdag.snake.Topics;
 import op.kompetensdag.snake.commands.ProcessAdminCommand;
 import op.kompetensdag.snake.model.*;
 import org.apache.kafka.common.serialization.Serdes;
@@ -10,14 +9,12 @@ import org.apache.kafka.streams.kstream.Branched;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Produced;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-import static op.kompetensdag.snake.Topics.*;
+import static op.kompetensdag.snake.config.Topics.*;
 
 @Configuration
 public class AdministrationProcessorConfig {
@@ -33,7 +30,7 @@ public class AdministrationProcessorConfig {
 
         streamsBuilder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdminSerde))
                 .mapValues((gameId, gameAdminCommand) -> ProcessAdminCommand.builder().gameId(gameId).gameAdministrationCommand(gameAdminCommand.getType()))
-                .leftJoin(gameStatusKTable, (cmdBuilder, gameStatus) -> cmdBuilder.gameStatus(Optional.ofNullable(gameStatus).map(gs -> gs.getType()).orElse(null))) //gameStatus.getType()))
+                .leftJoin(gameStatusKTable, (cmdBuilder, gameStatus) -> cmdBuilder.gameStatus(Optional.ofNullable(gameStatus).map(GameStatusRecord::getType).orElse(null))) //gameStatus.getType()))
                 .split()
                 .branch((gameId, cmdBuilder) -> cmdBuilder.build().shouldInitializeGame(),
                         Branched.withConsumer(cmdBuilder ->
@@ -70,7 +67,7 @@ public class AdministrationProcessorConfig {
                 .toStream()
                 .filter((key, value) -> value.getType().equals(GameStatus.INITIALIZING))
                 .mapValues(value -> new HeadDirectionRecord(HeadDirection.NORTH))
-                .to(HEAD_DIRECTION_TOPIC_3, Produced.with(Serdes.String(), headDirSerde));
+                .to(HEAD_DIRECTION_TOPIC, Produced.with(Serdes.String(), headDirSerde));
 
         return null;
     }
