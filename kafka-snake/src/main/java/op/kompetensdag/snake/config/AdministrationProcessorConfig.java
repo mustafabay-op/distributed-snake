@@ -1,7 +1,7 @@
 package op.kompetensdag.snake.config;
 
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import op.kompetensdag.snake.commands.ProcessAdminCommand;
+import op.kompetensdag.snake.processors.AdministrationProcessor;
 import op.kompetensdag.snake.model.*;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -29,7 +29,7 @@ public class AdministrationProcessorConfig {
 
 
         streamsBuilder.stream(GAME_ADMINISTRATION_COMMANDS_TOPIC, Consumed.with(Serdes.String(), gameAdminSerde))
-                .mapValues((gameId, gameAdminCommand) -> ProcessAdminCommand.builder().gameId(gameId).gameAdministrationCommand(gameAdminCommand.getType()))
+                .mapValues((gameId, gameAdminCommand) -> AdministrationProcessor.builder().gameId(gameId).gameAdministrationCommand(gameAdminCommand.getType()))
                 .leftJoin(gameStatusKTable, (cmdBuilder, gameStatus) -> cmdBuilder.gameStatus(Optional.ofNullable(gameStatus).map(GameStatusRecord::getType).orElse(null))) //gameStatus.getType()))
                 .split()
                 .branch((gameId, cmdBuilder) -> cmdBuilder.build().shouldInitializeGame(),
@@ -60,7 +60,7 @@ public class AdministrationProcessorConfig {
         gameStatusKTable
                 .toStream()
                 .filter((key, value) -> value.getType().equals(GameStatus.INITIALIZING))
-                .flatMapValues(value -> ProcessAdminCommand.builder().build().initializeGame())
+                .flatMapValues(value -> AdministrationProcessor.builder().build().initializeGame())
                 .to(Topics.GAME_TABLE_ENTRIES, Produced.with(Serdes.String(), gameTableEntrySerde));
 
         gameStatusKTable

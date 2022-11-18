@@ -1,4 +1,4 @@
-package op.kompetensdag.snake.commands;
+package op.kompetensdag.snake.processors;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Builder
-public class ProcessAdminCommand {
+public class AdministrationProcessor {
 
     @Getter
     private GameAdministrationCommand gameAdministrationCommand;
@@ -21,7 +21,6 @@ public class ProcessAdminCommand {
 
     public Iterable<GameTableEntry> initializeGame() {
         List<GameTableEntry> snake = getInitialSnake(List.of(new Position(10, 2), new Position(10, 3), new Position(10, 4)));
-        // GameSnakeEntries gameSnakeEntries = getInitialSnake(List.of(new Position(10, 2), new Position(10, 3), new Position(10, 4)));
         List<GameTableEntry> walls = getInitialWalls(23, 17);
         ArrayList<GameTableEntry> merge = new ArrayList<>();
         merge.addAll(snake);
