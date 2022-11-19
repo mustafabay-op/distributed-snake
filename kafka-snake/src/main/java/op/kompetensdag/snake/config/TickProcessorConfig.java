@@ -30,9 +30,22 @@ public class TickProcessorConfig {
     public KTable<String, GameTableEntry> snakeHead(final KStream<String, GameTableEntry> tableEntryLog,
                                                     final SpecificAvroSerde<GameTableEntry> gameTableEntrySerde) {
         return tableEntryLog
-                .filter((game, tableEntry) -> tableEntry.getType() == GameTableEntryType.SNAKE && tableEntry.getBusy())
+                // Here we want to calculate the position of game head.
+                // 1. Firstly we need to make sure that the game table entry is of the SNAKE type
+                // and that the position is occupied/busy.
+                // 2. Next up we need to aggregate the stream to a table and emit the latest entry.
+                //    For that we can use the reduce function. But before doing an aggregation
+                //    we need to group the stream by key to make sure that we are acting on specific games.
+                //    For that we use the groupByKey operation.
+
+                // Add your code above this line.
                 .groupByKey()
-                .reduce((current, next) -> next, Named.as(SNAKE_HEAD_REDUCE_NAME), Materialized.with(Serdes.String(), gameTableEntrySerde));
+                .reduce(reduce(), Named.as(SNAKE_HEAD_REDUCE_NAME), Materialized.with(Serdes.String(), gameTableEntrySerde));
+    }
+
+    private Reducer reduce() {
+        //Implement this, remove return null
+        return null;
     }
 
     @Bean
@@ -40,19 +53,14 @@ public class TickProcessorConfig {
                                                     final SpecificAvroSerde<GameTablePosition> gameTablePositionSerde,
                                                     final SpecificAvroSerde<GameSnakeEntries> gameTableEntriesSerde) {
         return tableEntryLog
-                .filter((game, tableEntry) -> tableEntry.getType() == GameTableEntryType.SNAKE)
-                .groupByKey()
-                .aggregate(() -> GameSnakeEntries.newBuilder().setEntries(new ArrayList<>()).build(), (game, newEntry, entries) -> {
-                    List<GameTableEntry> list = entries.getEntries();
-                    if (newEntry.getBusy()) {
-                        list.add(newEntry);
-                    } else {
-                        list.remove(0);
-                    }
-                    entries.setEntries(list);
-                    return entries;
-                }, Materialized.with(Serdes.String(), gameTableEntriesSerde))
-                .filter((game, entries) -> !entries.getEntries().isEmpty())
+                // Here we want to calculate the position of game tail.
+                // 1. Firstly we need to make sure that the game table entry is of the SNAKE type
+                // 2. Now we want to aggregate all the entries and add it to a list of entries if the entry is busy
+                //    When we want to aggregate a type but return a different type, we use the .aggregate() operation
+                // 3. At this point we want to filter out empty lists and map the list back to a GameTableEntry
+                //    Hint: Use the builder on GameTableEntries
+
+                // Add your code above this line.
                 .mapValues(v -> v.getEntries().get(0));
 
     }

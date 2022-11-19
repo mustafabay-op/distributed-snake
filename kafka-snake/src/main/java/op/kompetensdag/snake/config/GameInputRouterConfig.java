@@ -21,17 +21,22 @@ public class GameInputRouterConfig {
 
     @Bean
     public Object gameInputRoutingTopology(final StreamsBuilder streamsBuilder,
+                                           // These serialization and deserialization beans are to be used
+                                           // when producing/consuming to/from a topic
                                            final SpecificAvroSerde<GameAdministrationCommandRecord> gameAdministrationSerde,
                                            final SpecificAvroSerde<GameMovementKeyPressedRecord> gameMovementKeyPressedSerde) {
         return streamsBuilder
                 .stream(GAME_INPUT_TOPIC, Consumed.with(Serdes.String(), Serdes.String()))
                 .split()
-                .branch(GameInputRouter.isGameMovementKeyPressedEvent(),
-                        Branched.withConsumer(stream -> stream.mapValues(value -> new GameMovementKeyPressedRecord(GameMovementKeyPressed.valueOf(value)))
-                                .to(GAME_MOVEMENT_COMMANDS_TOPIC, Produced.with(Serdes.String(), gameMovementKeyPressedSerde))))
-                .branch(GameInputRouter.isGameAdministrationKeyPressedEvent(),
-                        Branched.withConsumer(stream -> stream.mapValues(value -> new GameAdministrationCommandRecord(GameAdministrationCommand.valueOf(value)))
-                                .to(GAME_ADMINISTRATION_COMMANDS_TOPIC, Produced.with(Serdes.String(), gameAdministrationSerde))))
+                // Use the .branch operation to add conditional branching.
+                // 1. If the record value is a game movement event create a GameMovementKeyPressedRecord
+                //    and send it to the GAME_MOVEMENT_COMMANDS_TOPIC.
+                // 2. If the record value is a game administration event, create a GameAdministrationCommandRecord
+                //    and send it to the GAME_ADMINISTRATION_COMMANDS_TOPIC
+                //
+                // Hint: Use the helper methods in processors/GameInputRouter
+
+                // Add your code above this line.
                 .defaultBranch(
                         Branched.withConsumer(stream -> stream.mapValues(v -> new GameMovementKeyPressedRecord(GameMovementKeyPressed.LEFT))
                                 .to(ILLEGAL_ARGUMENTS_TOPIC, Produced.with(Serdes.String(), gameMovementKeyPressedSerde))));
